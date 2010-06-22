@@ -1,0 +1,29 @@
+<?php
+// $Id$
+/* 
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+*/
+
+function style_edit_menu() {
+    $items['admin/styleedit'] = array(
+
+            'title' => 'Style Sheet Editor',
+            'description' => 'Edit Style',
+            'page callback' => 'drupal_get_form',
+            'page arguments' => array('style_edit_settings'),
+            'access arguments' => array('administer site configuration'),
+            'type' => MENU_NORMAL_ITEM,
+            //'file' => 'annotate.admin.inc',
+		);
+
+    return $items;
+}
+
+function style_edit_settings(){
+
+return 'Test';
+
+}
+
+?>
