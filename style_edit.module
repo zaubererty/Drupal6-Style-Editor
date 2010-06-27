@@ -10,42 +10,21 @@ function style_edit_menu() {
 
             'title' => 'Style Editor',
             'description' => 'Edit Style Sheets',
-            'page callback' => 'drupal_get_form',
-            'page arguments' => array('style_edit_settings'),
-            'access arguments' => array('view style sheets'),
-            'type' => MENU_NORMAL_ITEM,
-            //'file' => 'annotate.admin.inc',
-		);
-    $type = 'theme';
-    $sql = "SELECT info, name FROM {system} WHERE type = '%s'";
-    $result = db_query($sql,$type);
-
-    $rows[] = array();
-
-    while ($r = db_fetch_array($result)) {
-        $rows[] = $r;
-    }
-
-    $info = array();
-
-    foreach ($rows as $value){
-        $info = unserialize($value['info']);
-        //print ($info['name']);
-        //print '<br>';
-        //print_r($info);
-        //print '<br>';
-        
-        $items['admin/styleedit/' . $value['name']] = array(
-            'title' => $info['name'],
-            'description' => $info['description'],
-            'page callback' => 'drupal_get_form',
+            'page callback' => 'style_edit_overview',
             'page arguments' => array('style_edit_settings'),
             'access arguments' => array('view style sheets'),
             'type' => MENU_NORMAL_ITEM,
             //'file' => 'annotate.admin.inc',
             );
+    
+    $items['admin/styleedit/%/edit'] = array(
 
-    }
+            'title' => 'Edit',
+            'page callback' => 'style_edit_theme_edit',
+            'page arguments' => array(2),
+            'access arguments' => array('edit style sheets'),
+            'type' => MENU_LOCAL_TASK,
+            );
 
     return $items;
 }
@@ -66,5 +45,57 @@ return $form;
 }
 
 
+function style_edit_overview(){
+    return build_table(query_style_array('all'));
+}
 
+function style_edit_theme_edit($theme){
+    return build_table(query_style_array($theme));
+}
+
+
+function query_style_array($theme){
+    $type = 'theme';
+    if ($theme == 'all'){
+        $sql = "SELECT info, name FROM {system} WHERE type = '%s'";
+    }
+    else {
+        $sql = "SELECT info, name FROM {system} WHERE type = '%s' AND name = '%s'";
+    }
+
+    $result = db_query($sql,$type,$theme);
+
+    $rows[] = array();
+
+    while ($r = db_fetch_array($result)) {
+        $rows[] = $r;
+    }
+
+    return $rows;
+}
+
+function build_table($rows){
+    $header = array(
+        array('data' => t('Theme'), 'field' => 'name'),
+        array('data' => t('Type'), 'field' => 'style'),
+        );
+
+    $table[] = array();
+    $info = array();
+
+    foreach ($rows as $value){
+        $info = unserialize($value['info']);
+        if (count($value)==0) continue;
+        foreach ($info['stylesheets'] as $st_key => $st_value){
+            foreach ($st_value as $style){
+            $table[] = array(
+                l($info['name'],'admin/styleedit/' . $value['name'] . '/edit'),
+                $st_key . ' => ' . $style,
+            );
+            }
+        }
+    }
+
+    return theme('table',$header,$table);
+}
 ?>
