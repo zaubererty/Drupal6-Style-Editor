@@ -17,11 +17,20 @@ function style_edit_menu() {
             //'file' => 'annotate.admin.inc',
             );
     
-    $items['admin/styleedit/%/edit'] = array(
+    $items['admin/styleedit/%/view'] = array(
+
+            'title' => 'Edit',
+            'page callback' => 'style_edit_theme_view',
+            'page arguments' => array(2),
+            'access arguments' => array('view style sheets'),
+            'type' => MENU_LOCAL_TASK,
+            );
+
+    $items['admin/styleedit/%/view/%/%/edit'] = array(
 
             'title' => 'Edit',
             'page callback' => 'style_edit_theme_edit',
-            'page arguments' => array(2),
+            'page arguments' => array(2,4,5),
             'access arguments' => array('edit style sheets'),
             'type' => MENU_LOCAL_TASK,
             );
@@ -49,7 +58,7 @@ function style_edit_overview(){
     return build_table(query_style_array('all'));
 }
 
-function style_edit_theme_edit($theme){
+function style_edit_theme_view($theme){
     return build_table(query_style_array($theme));
 }
 
@@ -78,6 +87,7 @@ function build_table($rows){
     $header = array(
         array('data' => t('Theme'), 'field' => 'name'),
         array('data' => t('Type'), 'field' => 'style'),
+        array('data' => t('Operation'), 'field' => 'op'),
         );
 
     $table[] = array();
@@ -87,15 +97,23 @@ function build_table($rows){
         $info = unserialize($value['info']);
         if (count($value)==0) continue;
         foreach ($info['stylesheets'] as $st_key => $st_value){
-            foreach ($st_value as $style){
+            foreach ($st_value as $key => $style){
             $table[] = array(
-                l($info['name'],'admin/styleedit/' . $value['name'] . '/edit'),
+                l($info['name'],'admin/styleedit/' . $value['name'] . '/view'),
                 $st_key . ' => ' . $style,
+                l(t('edit'),'admin/styleedit/' . $value['name'] . '/view/'. $st_key .'/' . $key .'/edit'),
             );
             }
         }
     }
 
     return theme('table',$header,$table);
+}
+
+function style_edit_theme_edit($theme,$stylesesction,$style){
+    $rows = query_style_array($theme);
+    $info = unserialize($rows[1][info]);
+    //print_r(file($info['stylesheets'][$stylesesction][$style]));
+    return $theme . ' ' . $style . ' ' . $info['stylesheets'][$stylesesction][$style];
 }
 ?>
