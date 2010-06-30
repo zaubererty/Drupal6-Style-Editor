@@ -5,22 +5,29 @@
  * and open the template in the editor.
 */
 
-// @todo: use list_theme()
-
 function style_edit_menu() {
     $items['admin/settings/styleedit'] = array(
 
             'title' => 'Style Editor',
-            'description' => 'Edit Style Sheets',
+            'description' => 'style_edit_list_filesystem',
             'page callback' => 'style_edit_overview',
             'access arguments' => array('view style sheets'),
             'type' => MENU_NORMAL_ITEM,
             //'file' => 'annotate.admin.inc',
             );
-    $items['admin/settings/styleedit/list'] = array(
+    $items['admin/settings/styleedit/listfs'] = array(
 
-            'title' => 'List',
-            'page callback' => 'style_edit_overview',
+            'title' => 'List from Filesystem',
+            'page callback' => 'style_edit_list_filesystem',
+            'access arguments' => array('view style sheets'),
+            'type' => MENU_LOCAL_TASK,
+            );
+
+
+    $items['admin/settings/styleedit/listdb'] = array(
+
+            'title' => 'List from database',
+            'page callback' => 'style_edit_list_filesystem',
             'access arguments' => array('view style sheets'),
             'type' => MENU_LOCAL_TASK,
             );
@@ -73,7 +80,7 @@ return $form;
 }
 
 
-function style_edit_overview(){
+function style_edit_list_filesystem(){
     //dargs();
     dpm(list_themes());
     return build_table(query_style_array('all'));
@@ -86,6 +93,7 @@ function style_edit_theme_view($theme){
 
 
 function query_style_array($theme){
+    // TODO: use list_theme()
     $type = 'theme';
     if ($theme == 'all'){
         $sql = "SELECT info, name FROM {system} WHERE type = '%s'";
@@ -179,4 +187,8 @@ function get_style_sections_from_file($file){
     return $arrChunks;
 }
 
+function style_edit_list_filesystem() {
+    // TODO: implement database listing
+    return 'not done yet';
+}
 ?>
