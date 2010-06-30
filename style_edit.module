@@ -5,34 +5,41 @@
  * and open the template in the editor.
 */
 
+// @todo: use list_theme()
+
 function style_edit_menu() {
-    $items['admin/styleedit'] = array(
+    $items['admin/settings/styleedit'] = array(
 
             'title' => 'Style Editor',
             'description' => 'Edit Style Sheets',
             'page callback' => 'style_edit_overview',
-            'page arguments' => array('style_edit_settings'),
             'access arguments' => array('view style sheets'),
             'type' => MENU_NORMAL_ITEM,
             //'file' => 'annotate.admin.inc',
             );
-    
-    $items['admin/styleedit/%/view'] = array(
+    $items['admin/settings/styleedit/list'] = array(
 
-            'title' => 'Edit',
-            'page callback' => 'style_edit_theme_view',
-            'page arguments' => array(2),
+            'title' => 'List',
+            'page callback' => 'style_edit_overview',
             'access arguments' => array('view style sheets'),
             'type' => MENU_LOCAL_TASK,
             );
 
-    $items['admin/styleedit/%/view/%/%/edit'] = array(
+
+    $items['admin/settings/styleedit/%/view'] = array(
+
+            'title' => 'View',
+            'page callback' => 'style_edit_theme_view',
+            'page arguments' => array(3),
+            'access arguments' => array('view style sheets'),
+            );
+
+    $items['admin/settings/styleedit/%/edit/%/%'] = array(
 
             'title' => 'Edit',
             'page callback' => 'style_edit_theme_edit',
-            'page arguments' => array(2,4,5),
+            'page arguments' => array(3,5,6),
             'access arguments' => array('edit style sheets'),
-            'type' => MENU_LOCAL_TASK,
             );
 
     return $items;
@@ -55,10 +62,13 @@ return $form;
 
 
 function style_edit_overview(){
+    dargs();
+    dpm(list_themes());
     return build_table(query_style_array('all'));
 }
 
 function style_edit_theme_view($theme){
+    dargs();
     return build_table(query_style_array($theme));
 }
 
@@ -79,7 +89,6 @@ function query_style_array($theme){
     while ($r = db_fetch_array($result)) {
         $rows[] = $r;
     }
-
     return $rows;
 }
 
@@ -99,9 +108,9 @@ function build_table($rows){
         foreach ($info['stylesheets'] as $st_key => $st_value){
             foreach ($st_value as $key => $style){
             $table[] = array(
-                l($info['name'],'admin/styleedit/' . $value['name'] . '/view'),
+                l($info['name'],'admin/settings/styleedit/' . $value['name'] . '/view'),
                 $st_key . ' => ' . $style,
-                l(t('edit'),'admin/styleedit/' . $value['name'] . '/view/'. $st_key .'/' . $key .'/edit'),
+                l(t('edit'),'admin/settings/styleedit/' . $value['name'] . '/edit/'. $st_key .'/' . $key),
             );
             }
         }
@@ -110,10 +119,49 @@ function build_table($rows){
     return theme('table',$header,$table);
 }
 
-function style_edit_theme_edit($theme,$stylesesction,$style){
+function style_edit_theme_edit($theme,$stylesesction,$stylesheet){
+    $header = array(
+        array('data' => t('ID'), 'field' => 'id'),
+        array('data' => t('Class / Element'), 'field' => 'selector'),
+        array('data' => t('CSS'), 'field' => 'style'),
+        array('data' => t('Operation'), 'field' => 'op'),
+        );
+
+
     $rows = query_style_array($theme);
     $info = unserialize($rows[1][info]);
-    //print_r(file($info['stylesheets'][$stylesesction][$style]));
-    return $theme . ' ' . $style . ' ' . $info['stylesheets'][$stylesesction][$style];
+    $styles = get_style_sections_from_file($info['stylesheets'][$stylesesction][$stylesheet]);
+    dpm($styles);
+
+    $id = 1;
+    foreach ($styles[0] as $key => $style) {
+        if ($styles[2][$key] == '') continue;
+        $line = split('{', $style);
+        $table[] = array(
+            $id,
+            $line[0],
+            str_replace(';', ';<br>',str_replace('}','', $line[1])),
+            l(t(edit), 'admin/settings/styleedit/'),
+        );
+        $id++;
+    }
+    drupal_set_message(t('Import OK'));
+    return theme('table',$header,$table);
+    //return $theme . ' ' . $style . ' ' . $info['stylesheets'][$stylesesction][$stylesheet];
+}
+
+function get_style_sections_from_file($file){
+    $arrChunks = array();
+
+    //$fs_sy = fopen($info['stylesheets'][$stylesesction][$style]);
+    $str_style = file_get_contents($file);
+    $str_style = str_replace("\r", '', $str_style);
+    $str_style = str_replace('/**/', '[__]', $str_style);
+    if (substr($str_style, 0, 2) != '/*'){
+	$str_style = "\n" . $str_style;
+    }
+    preg_match_all('@(/\*.*\*\/)|([^\/}]*{[^}]*})@Us', $str_style, $arrChunks);
+    //fclose($fs_sy);
+    return $arrChunks;
 }
 ?>

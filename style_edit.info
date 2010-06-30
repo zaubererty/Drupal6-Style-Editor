@@ -4,3 +4,5 @@ description = Allows Admins to edit the style sheets
 core = 6.x
 package = Administration
 php = 5.2
+version = "6.x-0.1"
+project = "style_editor"
