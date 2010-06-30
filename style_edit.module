@@ -73,13 +73,13 @@ return $form;
 
 
 function style_edit_overview(){
-    dargs();
+    //dargs();
     dpm(list_themes());
     return build_table(query_style_array('all'));
 }
 
 function style_edit_theme_view($theme){
-    dargs();
+    //dargs();
     return build_table(query_style_array($theme));
 }
 
@@ -131,6 +131,7 @@ function build_table($rows){
 }
 
 function style_edit_theme_import($theme,$stylesesction,$stylesheet){
+    drupal_add_tabledrag('stylesheet_table', 'order', 'sibling', 'weight-group');
     $header = array(
         array('data' => t('ID'), 'field' => 'id'),
         array('data' => t('Class / Element'), 'field' => 'selector'),
@@ -155,9 +156,10 @@ function style_edit_theme_import($theme,$stylesesction,$stylesheet){
             l(t(edit), 'admin/settings/styleedit/edit/'.$id),
         );
         $id++;
+
     }
     drupal_set_message(t('Import OK'));
-    return theme('table',$header,$table);
+    return theme('table',$header,$table,array('id'=>'stylesheet_table'));
     //return $theme . ' ' . $style . ' ' . $info['stylesheets'][$stylesesction][$stylesheet];
 }
 
