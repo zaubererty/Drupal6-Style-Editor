@@ -28,7 +28,7 @@ function style_edit_menu() {
     $items['admin/settings/styleedit/listdb'] = array(
 
             'title' => 'List from database',
-            'page callback' => 'style_edit_list_filesystem',
+            'page callback' => 'style_edit_list_database',
             'access arguments' => array('view style sheets'),
             'type' => MENU_LOCAL_TASK,
             );
@@ -188,7 +188,7 @@ function get_style_sections_from_file($file){
     return $arrChunks;
 }
 
-function style_edit_list_filesystem() {
+function style_edit_list_database() {
     // TODO: implement database listing
     return 'not done yet';
 }
