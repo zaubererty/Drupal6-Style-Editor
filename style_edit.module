@@ -34,11 +34,19 @@ function style_edit_menu() {
             'access arguments' => array('view style sheets'),
             );
 
-    $items['admin/settings/styleedit/%/edit/%/%'] = array(
+    $items['admin/settings/styleedit/%/import/%/%'] = array(
+
+            'title' => 'Import',
+            'page callback' => 'style_edit_theme_import',
+            'page arguments' => array(3,5,6),
+            'access arguments' => array('import style sheets'),
+            );
+
+    $items['admin/settings/styleedit/edit/%'] = array(
 
             'title' => 'Edit',
-            'page callback' => 'style_edit_theme_edit',
-            'page arguments' => array(3,5,6),
+            'page callback' => 'style_edit_styleset_edit',
+            'page arguments' => array(4),
             'access arguments' => array('edit style sheets'),
             );
 
@@ -46,7 +54,10 @@ function style_edit_menu() {
 }
 
 function style_edit_perm() {
-    return array('view style sheets',
+    return array(
+        'view style sheets',
+        'import style sheets',
+        'update style sheets',
         'edit style sheets',
         );
 }
@@ -110,7 +121,7 @@ function build_table($rows){
             $table[] = array(
                 l($info['name'],'admin/settings/styleedit/' . $value['name'] . '/view'),
                 $st_key . ' => ' . $style,
-                l(t('edit'),'admin/settings/styleedit/' . $value['name'] . '/edit/'. $st_key .'/' . $key),
+                l(t('import'),'admin/settings/styleedit/' . $value['name'] . '/import/'. $st_key .'/' . $key),
             );
             }
         }
@@ -119,7 +130,7 @@ function build_table($rows){
     return theme('table',$header,$table);
 }
 
-function style_edit_theme_edit($theme,$stylesesction,$stylesheet){
+function style_edit_theme_import($theme,$stylesesction,$stylesheet){
     $header = array(
         array('data' => t('ID'), 'field' => 'id'),
         array('data' => t('Class / Element'), 'field' => 'selector'),
@@ -141,7 +152,7 @@ function style_edit_theme_edit($theme,$stylesesction,$stylesheet){
             $id,
             $line[0],
             str_replace(';', ';<br>',str_replace('}','', $line[1])),
-            l(t(edit), 'admin/settings/styleedit/'),
+            l(t(edit), 'admin/settings/styleedit/edit/'.$id),
         );
         $id++;
     }
@@ -163,5 +174,42 @@ function get_style_sections_from_file($file){
     preg_match_all('@(/\*.*\*\/)|([^\/}]*{[^}]*})@Us', $str_style, $arrChunks);
     //fclose($fs_sy);
     return $arrChunks;
+}
+
+function style_edit_styleset_edit($styleset) {
+    $from['sel_cat'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Selector and category'),
+        '#tree' => TRUE,
+        '#collapsible' => TRUE,
+        );
+
+    $from['sel_cat']['selector'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Selector'),
+        );
+
+     $from['size_pos'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Size and position'),
+        '#tree' => TRUE,
+        '#collapsible' => TRUE,
+        );
+
+    $from['size_pos']['width'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Width'),
+        '#value' => '42',
+        '#size' => 10,
+        );
+
+    $from['size_pos']['w_mat'] = array(
+        '#type' => 'select',
+        '#title' => t('Width'),
+        '#options' => array(t('Optional'), t('Required')),
+        );
+
+    dpm($from);
+    return drupal_render($from);
 }
 ?>
