@@ -9,12 +9,13 @@ function style_edit_menu() {
     $items['admin/settings/styleedit'] = array(
 
             'title' => 'Style Editor',
-            'description' => 'style_edit_list_filesystem',
-            'page callback' => 'style_edit_overview',
+            'description' => 'Edit theme stylesheets',
+            'page callback' => 'style_edit_list_filesystem',
             'access arguments' => array('view style sheets'),
             'type' => MENU_NORMAL_ITEM,
             //'file' => 'annotate.admin.inc',
             );
+    
     $items['admin/settings/styleedit/listfs'] = array(
 
             'title' => 'List from Filesystem',
