@@ -192,4 +192,14 @@ function style_edit_list_database() {
     // TODO: implement database listing
     return 'not done yet';
 }
+
+function style_edit_install() {
+require_once 'style_edit_db_tables.inc';
+
+}
+
+function style_edit_uninstall() {
+require_once 'style_edit_db_tables.inc';
+
+}
 ?>
