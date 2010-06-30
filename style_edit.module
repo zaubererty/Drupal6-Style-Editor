@@ -45,9 +45,10 @@ function style_edit_menu() {
     $items['admin/settings/styleedit/edit/%'] = array(
 
             'title' => 'Edit',
-            'page callback' => 'style_edit_styleset_edit',
-            'page arguments' => array(4),
+            'page callback' => 'drupal_get_form',
+            'page arguments' => array('style_edit_styleset_edit_form',4),
             'access arguments' => array('edit style sheets'),
+            'file' => 'style_edit_form.inc',
             );
 
     return $items;
@@ -176,40 +177,4 @@ function get_style_sections_from_file($file){
     return $arrChunks;
 }
 
-function style_edit_styleset_edit($styleset) {
-    $from['sel_cat'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Selector and category'),
-        '#tree' => TRUE,
-        '#collapsible' => TRUE,
-        );
-
-    $from['sel_cat']['selector'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Selector'),
-        );
-
-     $from['size_pos'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Size and position'),
-        '#tree' => TRUE,
-        '#collapsible' => TRUE,
-        );
-
-    $from['size_pos']['width'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Width'),
-        '#value' => '42',
-        '#size' => 10,
-        );
-
-    $from['size_pos']['w_mat'] = array(
-        '#type' => 'select',
-        '#title' => t('Width'),
-        '#options' => array(t('Optional'), t('Required')),
-        );
-
-    dpm($from);
-    return drupal_render($from);
-}
 ?>
