@@ -1,0 +1,20 @@
+<?php
+/* 
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+function style_edit_schema() {
+    require_once 'style_edit_db_tables.inc';
+    return style_edit_schema_definition();
+}
+
+function style_edit_install() {
+    drupal_install_schema('style_edit');
+}
+
+function style_edit_uninstall() {
+    drupal_uninstall_schema('style_edit');
+}
+
+?>

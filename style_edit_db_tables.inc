@@ -5,8 +5,10 @@
  */
 
 function style_edit_schema_definition(){
-    $schema = style_edit_schema_cssimport();
-    $schema = array_merge(style_edit_schema_cssstyles(),$schema);
+    $schema = array_merge(
+            style_edit_schema_cssimport(),
+            style_edit_schema_cssstyles()
+            );
     return $schema;
 }
 
