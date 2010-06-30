@@ -190,11 +190,14 @@ function get_style_sections_from_file($file){
 
 function style_edit_list_database() {
     // TODO: implement database listing
+    require_once 'style_edit_db_tables.inc';
+    dpm(style_edit_schema_definition());
     return 'not done yet';
 }
 
-function style_edit_shema() {
-require_once 'style_edit_db_tables.inc';
-
+function style_edit_schema() {
+    require_once 'style_edit_db_tables.inc';
+    return style_edit_schema_definition();
 }
+
 ?>
