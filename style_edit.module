@@ -151,35 +151,41 @@ function style_edit_theme_import($theme,$stylesesction,$stylesheet){
         array('data' => t('Operation'), 'field' => 'op'),
         );
 
+
     $rows = query_style_array($theme);
     $info = unserialize($rows[1][info]);
-
-    $table = 'style_edit_cssimport';
-    $recored = new stdClass();
-    $recored->source = 'theme';
-    $recored->name = $info['name'];
-    $recored->systemname = $theme;
-    $recored->filename = '!test!';
-    $recored->systemname = $theme;
-    $recored->path = $info['stylesheets'][$stylesesction][$stylesheet];
-
-    drupal_set_message(drupal_write_record($table, $recored));
-
-    $styles = get_style_sections_from_file($info['stylesheets'][$stylesesction][$stylesheet]);
+    $cssfilename = $info['stylesheets'][$stylesesction][$stylesheet];
+    $styles = get_style_sections_from_file($cssfilename);
     dpm($styles);
+    dpm($info);
+
+    $filedata = array(
+        'name' => $info['name'],
+        'systemname' => $theme,
+        'filename' => $stylesheet,
+        'path' => $cssfilename,
+        'ufiletimestamp' => 1,
+    );
+
+    $sql = 'SELECT cssid,ufiletimestamp FROM {style_edit_cssimport} WHERE name = %s AND path = %s';
+    $result = db_query($sql);
+
+    drupal_write_record('style_edit_cssimport', $filedata);
 
     $id = 1;
-    $weigth = 100;
+    $sortval = 100;
     foreach ($styles[0] as $key => $style) {
         if ($styles[2][$key] == '') continue;
         $line = split('{', $style);
+        $stylecontend = str_replace(';', ';<br>',str_replace('}','', $line[1]));
         $table[] = array(
             $id,
             $line[0],
-            str_replace(';', ';<br>',str_replace('}','', $line[1])),
+            $stylecontend,
             l(t(edit), 'admin/settings/styleedit/edit/'.$id),
         );
         $id++;
+        $sortval++;
 
     }
     drupal_set_message(t('Import OK'));
