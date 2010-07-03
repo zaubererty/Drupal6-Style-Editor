@@ -59,12 +59,7 @@ function style_edit_schema_cssimport() {
         ),
         'primary key' => array(
             'cssid'
-            ),
-        'indexes' => array(
-            'cssid' => array(
-                'cssid'
-                ),
-         ),
+        ),
     );
     return $schema;
 }
@@ -109,9 +104,6 @@ function style_edit_schema_cssstyles() {
             'styleid'
             ),
         'indexes' => array(
-            'styleid' => array(
-                'styleid'
-                ),
             'cssid' => array(
                 'cssid'
                 ),

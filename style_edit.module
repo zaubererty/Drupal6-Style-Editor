@@ -82,15 +82,10 @@ return $form;
 
 
 function style_edit_list_filesystem(){
-    //dargs();
-    dpm(list_themes());
-    dpm(query_style_array('all'));
-
     return build_table(query_style_array('all'));
 }
 
 function style_edit_theme_view($theme){
-    //dargs();
     return build_table(query_style_array($theme));
 }
 
@@ -143,6 +138,7 @@ function build_table($rows){
 }
 
 function style_edit_theme_import($theme,$stylesesction,$stylesheet){
+
     drupal_add_tabledrag('stylesheet_table', 'order', 'sibling', 'weight-group');
     $header = array(
         array('data' => t('ID'), 'field' => 'id'),
@@ -156,10 +152,8 @@ function style_edit_theme_import($theme,$stylesesction,$stylesheet){
     $info = unserialize($rows[1][info]);
     $cssfilename = $info['stylesheets'][$stylesesction][$stylesheet];
     $styles = get_style_sections_from_file($cssfilename);
-    dpm($styles);
-    dpm($info);
 
-    $filedata = array(
+    $insertdata = array(
         'name' => $info['name'],
         'systemname' => $theme,
         'filename' => $stylesheet,
@@ -167,30 +161,59 @@ function style_edit_theme_import($theme,$stylesesction,$stylesheet){
         'ufiletimestamp' => 1,
     );
 
-    $sql = 'SELECT cssid,ufiletimestamp FROM {style_edit_cssimport} WHERE name = %s AND path = %s';
-    $result = db_query($sql);
+    $sql = "SELECT cssid,ufiletimestamp FROM {style_edit_cssimport} WHERE name = '%s' AND path = '%s'";
+    $result = db_query($sql,array($theme,$cssfilename));
+    $cssdbid = 0;
 
-    drupal_write_record('style_edit_cssimport', $filedata);
+    if ($result->num_rows == 0){
+        drupal_write_record('style_edit_cssimport', $insertdata);
+        $cssdbid = db_last_insert_id('style_edit_cssimport', 'cssid');
+    } else {
+        $cssfilerow = db_fetch_array($result);
+        $cssdbid = $cssfilerow['cssid'];
+        $sql = "DELETE FROM {style_edit_cssstyles} WHERE cssid = %d";
+        $result = db_query($sql,$cssdbid);
+    }
 
-    $id = 1;
     $sortval = 100;
     foreach ($styles[0] as $key => $style) {
-        if ($styles[2][$key] == '') continue;
-        $line = split('{', $style);
-        $stylecontend = str_replace(';', ';<br>',str_replace('}','', $line[1]));
-        $table[] = array(
-            $id,
-            $line[0],
-            $stylecontend,
-            l(t(edit), 'admin/settings/styleedit/edit/'.$id),
-        );
-        $id++;
-        $sortval++;
 
+        if ($styles[2][$key] == '') {
+            $kind = 'COMMENT';
+            $selector = '';
+            $styledb = $style;
+        }else {
+            $line = split('{', $style);
+            $kind = 'STYLE';
+            $selector = $line[0];
+            $styledb = '{'.$line[1];
+        }
+
+        $insertdata = array(
+            'kind' => $kind,
+            'selector' => $selector,
+            'style' => $styledb,
+            'weigth' => $sortval,
+            'cssid' => $cssdbid,
+        );
+
+        // TODO: update statt insert
+        if (drupal_write_record('style_edit_cssstyles', $insertdata))
+                $styledbid = db_last_insert_id('style_edit_cssstyles', 'styleid');
+
+        $styledb = str_replace('{','', $styledb);
+        if ($kind == 'STYLE'){
+            $table[] = array(
+                $styledbid,
+                $selector,
+                str_replace(';', ';<br>',str_replace('}','', $styledb)),
+                l(t(edit), 'admin/settings/styleedit/edit/'.$styledbid),
+            );    
+        }
+        $sortval++;
     }
     drupal_set_message(t('Import OK'));
     return theme('table',$header,$table,array('id'=>'stylesheet_table'));
-    //return $theme . ' ' . $style . ' ' . $info['stylesheets'][$stylesesction][$stylesheet];
 }
 
 function get_style_sections_from_file($file){
