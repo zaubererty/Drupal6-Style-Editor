@@ -108,6 +108,9 @@ function style_edit_schema_cssstyles() {
                 'cssid'
                 ),
          ),
+        'foreign keys' => array(
+            'cssid' => array('style_edit_cssstyles' => 'cssid'),
+),
     );
     return $schema;
 }

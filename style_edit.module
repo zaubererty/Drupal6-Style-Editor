@@ -16,29 +16,29 @@ function style_edit_menu() {
             //'file' => 'annotate.admin.inc',
             );
     
-    $items['admin/settings/styleedit/listfs'] = array(
+    $items['admin/settings/styleedit/list'] = array(
 
-            'title' => 'List from Filesystem',
+            'title' => 'List',
             'page callback' => 'style_edit_list_filesystem',
             'access arguments' => array('view style sheets'),
-            'type' => MENU_LOCAL_TASK,
+            'type' => MENU_DEFAULT_LOCAL_TASK,
             );
 
 
     $items['admin/settings/styleedit/listdb'] = array(
 
-            'title' => 'List from database',
+            'title' => 'Edit Stylesheet',
             'page callback' => 'style_edit_list_database',
             'access arguments' => array('view style sheets'),
             'type' => MENU_LOCAL_TASK,
             );
 
 
-    $items['admin/settings/styleedit/%/view'] = array(
+    $items['admin/settings/styleedit/listtheme/%'] = array(
 
             'title' => 'View',
-            'page callback' => 'style_edit_theme_view',
-            'page arguments' => array(3),
+            'page callback' => 'style_edit_theme_listtheme',
+            'page arguments' => array(4),
             'access arguments' => array('view style sheets'),
             );
 
@@ -82,30 +82,20 @@ return $form;
 
 
 function style_edit_list_filesystem(){
-    return build_table(query_style_array('all'));
+    dpm(list_themes());
+    return build_table(query_style_array());
 }
 
-function style_edit_theme_view($theme){
+function style_edit_theme_listtheme($theme){
     return build_table(query_style_array($theme));
 }
 
 
-function query_style_array($theme){
-    // TODO: use list_theme()
-    $type = 'theme';
-    if ($theme == 'all'){
-        $sql = "SELECT info, name FROM {system} WHERE type = '%s'";
-    }
-    else {
-        $sql = "SELECT info, name FROM {system} WHERE type = '%s' AND name = '%s'";
-    }
+function query_style_array($theme = 'all'){
 
-    $result = db_query($sql,$type,$theme);
-
-    $rows[] = array();
-
-    while ($r = db_fetch_array($result)) {
-        $rows[] = $r;
+    foreach (list_themes() as $themesysname => $themedetails) {
+        if ($theme == $themesysname or $theme == 'all')
+            $rows[] = (array)$themedetails;
     }
     return $rows;
 }
@@ -121,14 +111,17 @@ function build_table($rows){
     $info = array();
 
     foreach ($rows as $value){
-        $info = unserialize($value['info']);
-        if (count($value)==0) continue;
-        foreach ($info['stylesheets'] as $st_key => $st_value){
+        //$info = unserialize($value['info']);
+        //if (count($value)==0) continue;
+        foreach ($value['stylesheets'] as $st_key => $st_value){
             foreach ($st_value as $key => $style){
+
+
             $table[] = array(
-                l($info['name'],'admin/settings/styleedit/' . $value['name'] . '/view'),
+                l($value['info']['name'],'admin/settings/styleedit/listtheme/'.$value['name']),
                 $st_key . ' => ' . $style,
-                l(t('import'),'admin/settings/styleedit/import/' . $value['name'] . '/'. $st_key .'/' . $key),
+                l(t('import'),'admin/settings/styleedit/import/'.$value['name'].'/'.$st_key .'/'.$key),
+                ""
             );
             }
         }
