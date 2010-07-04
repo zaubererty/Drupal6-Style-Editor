@@ -5,6 +5,8 @@
  * and open the template in the editor.
 */
 
+require_once 'style_edit_form.inc';
+
 function style_edit_menu() {
     $items['admin/settings/styleedit'] = array(
 
@@ -28,9 +30,10 @@ function style_edit_menu() {
     $items['admin/settings/styleedit/editsheet/%'] = array(
 
             'title' => 'Edit Stylesheet',
-            'page callback' => 'style_edit_edit_sheet',
-            'page arguments' => array(4),
-            'access arguments' => array('view style sheets'),
+            'page callback' => 'drupal_get_form',
+            'page arguments' => array('style_edit_stylesheet_edit_form',4),
+            'access arguments' => array('edit style sheets'),
+            'file' => 'style_edit_form.inc',
             'type' => MENU_LOCAL_TASK,
             );
 
@@ -46,7 +49,7 @@ function style_edit_menu() {
     $items['admin/settings/styleedit/import/%/%/%'] = array(
 
             'title' => 'Import',
-            'page callback' => 'style_edit_theme_import',
+            'page callback' => 'style_edit_import_theme',
             'page arguments' => array(4,5,6),
             'access arguments' => array('import style sheets'),
             );
@@ -67,7 +70,6 @@ function style_edit_perm() {
     return array(
         'view style sheets',
         'import style sheets',
-        'update style sheets',
         'edit style sheets',
         );
 }
@@ -89,7 +91,6 @@ function style_edit_list_filesystem(){
 function style_edit_theme_listtheme($theme){
     return build_table(query_style_array($theme));
 }
-
 
 function query_style_array($theme = 'all'){
 
@@ -147,7 +148,7 @@ function create_action_links($systemname, $media, $filename, $path){
     return $links;
 }
 
-function style_edit_theme_import($theme,$stylesesction,$stylesheet){
+function style_edit_import_theme($theme,$stylesesction,$stylesheet){
     drupal_add_tabledrag('stylesheet_table', 'order', 'sibling', 'weight-group');
     $header = array(
         array('data' => t('ID'), 'field' => 'id'),
@@ -224,7 +225,10 @@ function style_edit_theme_import($theme,$stylesesction,$stylesheet){
         $sortval++;
     }
     drupal_set_message(t('Import OK'));
-    return theme('table',$header,$table,array('id'=>'stylesheet_table'));
+    //return theme('table',$header,$table,array('id'=>'stylesheet_table'));
+
+    // TODO: Clean up rendering
+    return drupal_get_form('style_edit_stylesheet_edit_form',$cssdbid);
 }
 
 function get_style_sections_from_file($file){
@@ -262,6 +266,63 @@ function style_edit_edit_sheet($cssid) {
     }
     dpm($table);
     return theme('table',$header,$table,array('id'=>'stylesheet_table'));
+}
+
+/**
+ *  Load the Stylesheet from the database
+ *
+ * @param   int     $cssid  ID of the stylesheed to load
+ * @return  array           List of items and count field
+ */
+
+function style_edit_load_stylesheet_db($cssid){
+    $sql = 'SELECT * FROM {style_edit_cssstyles} WHERE cssid = %d ORDER BY weigth';
+    $result = db_query($sql,$cssid);
+    $table[] = array();
+    while ($r = db_fetch_array($result)) {
+        $table[] = $r;
+    }
+    $table['count'] = $result->num_rows;
+    return $table;
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function style_edit_theme($existing, $type, $theme, $path) {
+    return array(
+            'style_edit_stylesheet_edit_form' => array(
+                    'arguments' => array('form' => NULL),
+            ),
+    );
+}
+
+function theme_style_edit_stylesheet_edit_form($form){
+    drupal_add_tabledrag('css_table', 'order', 'sibling', 'weight-group');
+
+    $header = array(t('Selector'),t('Style'),t('Operation'),'Weight');
+    foreach (element_children($form['css']) as $key) {
+
+        $element = &$form['css'][$key];
+        $element['weight']['#attributes']['class'] = 'weight-group';
+        $element['itemid']['#attributes']['class'] = 'itemid';
+
+        $row = array();
+        $row[] = drupal_render($element['selector']);
+        $row[] = drupal_render($element['style']);
+        $row[] = drupal_render($element['operation']);
+        $row[] = drupal_render($element['weight']).
+                    drupal_render($element['styleid']);
+
+        //Add a draggable class to every table row (<tr>)
+        $rows[] = array('data' => $row, 'class' => 'draggable');
+    }
+
+    $output = theme('table', $header, $rows, array('id' => 'css_table'));
+
+    $output .= drupal_render($form);
+
+    return $output;
 }
 
 ?>
