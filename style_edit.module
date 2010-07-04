@@ -25,10 +25,11 @@ function style_edit_menu() {
             );
 
 
-    $items['admin/settings/styleedit/listdb'] = array(
+    $items['admin/settings/styleedit/editsheet/%'] = array(
 
             'title' => 'Edit Stylesheet',
-            'page callback' => 'style_edit_list_database',
+            'page callback' => 'style_edit_edit_sheet',
+            'page arguments' => array(4),
             'access arguments' => array('view style sheets'),
             'type' => MENU_LOCAL_TASK,
             );
@@ -50,7 +51,7 @@ function style_edit_menu() {
             'access arguments' => array('import style sheets'),
             );
 
-    $items['admin/settings/styleedit/edit/%'] = array(
+    $items['admin/settings/styleedit/editstyle/%'] = array(
 
             'title' => 'Edit',
             'page callback' => 'drupal_get_form',
@@ -82,7 +83,6 @@ return $form;
 
 
 function style_edit_list_filesystem(){
-    dpm(list_themes());
     return build_table(query_style_array());
 }
 
@@ -111,18 +111,15 @@ function build_table($rows){
     $info = array();
 
     foreach ($rows as $value){
-        //$info = unserialize($value['info']);
-        //if (count($value)==0) continue;
         foreach ($value['stylesheets'] as $st_key => $st_value){
             foreach ($st_value as $key => $style){
-
-
-            $table[] = array(
-                l($value['info']['name'],'admin/settings/styleedit/listtheme/'.$value['name']),
-                $st_key . ' => ' . $style,
-                l(t('import'),'admin/settings/styleedit/import/'.$value['name'].'/'.$st_key .'/'.$key),
-                ""
-            );
+                $action_links = create_action_links($value['name'],$st_key,$key,$style);
+                $table[] = array(
+                    l($value['info']['name'],'admin/settings/styleedit/listtheme/'.$value['name']),
+                    $st_key . ' => ' . $style,
+                    $action_links['import'],
+                    $action_links['edit']
+                );
             }
         }
     }
@@ -130,8 +127,27 @@ function build_table($rows){
     return theme('table',$header,$table);
 }
 
-function style_edit_theme_import($theme,$stylesesction,$stylesheet){
+function create_action_links($systemname, $media, $filename, $path){
 
+    $links = array();
+    $sql = "SELECT cssid FROM {style_edit_cssimport} ".
+        "WHERE systemname = '%s' AND path = '%s'";
+    $result = db_query($sql,array($systemname,$path));
+
+    if ($result->num_rows > 0){
+        $cssid = db_result($result);
+        $links['import'] = l(t('reimport'),'admin/settings/styleedit/import/'.
+                $systemname.'/'.$media .'/'.$filename);
+        $links['edit'] = l(t('edit'),'admin/settings/styleedit/editsheet/'.$cssid);
+    }else {
+        $links['import'] = l(t('import'),'admin/settings/styleedit/import/'.
+                $systemname.'/'.$media .'/'.$filename);
+        $links['edit'] = '';
+    }
+    return $links;
+}
+
+function style_edit_theme_import($theme,$stylesesction,$stylesheet){
     drupal_add_tabledrag('stylesheet_table', 'order', 'sibling', 'weight-group');
     $header = array(
         array('data' => t('ID'), 'field' => 'id'),
@@ -141,20 +157,22 @@ function style_edit_theme_import($theme,$stylesesction,$stylesheet){
         );
 
 
-    $rows = query_style_array($theme);
-    $info = unserialize($rows[1][info]);
-    $cssfilename = $info['stylesheets'][$stylesesction][$stylesheet];
+    $info = query_style_array($theme);
+    $cssfilename = $info[0]['stylesheets'][$stylesesction][$stylesheet];
     $styles = get_style_sections_from_file($cssfilename);
 
     $insertdata = array(
-        'name' => $info['name'],
+        'name' => $info['info']['name'],
+        // TODO: source dynamic
+        'source' => 'theme',
         'systemname' => $theme,
         'filename' => $stylesheet,
         'path' => $cssfilename,
         'ufiletimestamp' => 1,
     );
 
-    $sql = "SELECT cssid,ufiletimestamp FROM {style_edit_cssimport} WHERE name = '%s' AND path = '%s'";
+    $sql = "SELECT cssid,ufiletimestamp FROM {style_edit_cssimport} ".
+        "WHERE systemname = '%s' AND path = '%s'";
     $result = db_query($sql,array($theme,$cssfilename));
     $cssdbid = 0;
 
@@ -168,7 +186,7 @@ function style_edit_theme_import($theme,$stylesesction,$stylesheet){
         $result = db_query($sql,$cssdbid);
     }
 
-    $sortval = 100;
+    $sortval = 1;
     foreach ($styles[0] as $key => $style) {
 
         if ($styles[2][$key] == '') {
@@ -222,11 +240,28 @@ function get_style_sections_from_file($file){
     return $arrChunks;
 }
 
-function style_edit_list_database() {
+function style_edit_edit_sheet($cssid) {
     // TODO: implement database listing
-    require_once 'style_edit_db_tables.inc';
-    dpm(style_edit_schema_definition());
-    return 'not done yet';
+    $header = array(
+        array('data' => t('ID'), 'field' => 'id'),
+        array('data' => t('Class / Element'), 'field' => 'selector'),
+        array('data' => t('CSS'), 'field' => 'style'),
+        array('data' => t('Operation'), 'field' => 'op'),
+        );
+
+    $sql = 'SELECT * FROM {style_edit_cssstyles} WHERE cssid = %d ORDER BY weigth';
+    $result = db_query($sql,$cssid);
+    $table[] = array();
+    while ($r = db_fetch_array($result)) {
+        $table[] = array(
+          $r['styleid'],
+          $r['selector'],
+          $r['style'],
+          $r['weigth'] . ' / ' . $result->num_rows,
+        );
+    }
+    dpm($table);
+    return theme('table',$header,$table,array('id'=>'stylesheet_table'));
 }
 
 ?>
