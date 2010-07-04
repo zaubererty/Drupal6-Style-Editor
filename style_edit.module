@@ -148,36 +148,30 @@ function create_action_links($systemname, $media, $filename, $path){
     return $links;
 }
 
-function style_edit_import_theme($theme,$stylesesction,$stylesheet){
-    drupal_add_tabledrag('stylesheet_table', 'order', 'sibling', 'weight-group');
-    $header = array(
-        array('data' => t('ID'), 'field' => 'id'),
-        array('data' => t('Class / Element'), 'field' => 'selector'),
-        array('data' => t('CSS'), 'field' => 'style'),
-        array('data' => t('Operation'), 'field' => 'op'),
-        );
-
+function style_edit_import_theme($theme,$stylesesction,$stylesheet) {
+    // TODO: update statt insert
 
     $info = query_style_array($theme);
     $cssfilename = $info[0]['stylesheets'][$stylesesction][$stylesheet];
     $styles = get_style_sections_from_file($cssfilename);
 
     $insertdata = array(
-        'name' => $info['info']['name'],
-        // TODO: source dynamic
-        'source' => 'theme',
-        'systemname' => $theme,
-        'filename' => $stylesheet,
-        'path' => $cssfilename,
-        'ufiletimestamp' => 1,
+            'name' => $info['info']['name'],
+            // TODO: source dynamic
+            'source' => 'theme',
+            'systemname' => $theme,
+            'filename' => $stylesheet,
+            'path' => $cssfilename,
+            'ufiletimestamp' => 1,
     );
 
+    // TODO: check timestamp
     $sql = "SELECT cssid,ufiletimestamp FROM {style_edit_cssimport} ".
-        "WHERE systemname = '%s' AND path = '%s'";
+            "WHERE systemname = '%s' AND path = '%s'";
     $result = db_query($sql,array($theme,$cssfilename));
     $cssdbid = 0;
 
-    if ($result->num_rows == 0){
+    if ($result->num_rows == 0) {
         drupal_write_record('style_edit_cssimport', $insertdata);
         $cssdbid = db_last_insert_id('style_edit_cssimport', 'cssid');
     } else {
@@ -202,32 +196,19 @@ function style_edit_import_theme($theme,$stylesesction,$stylesheet){
         }
 
         $insertdata = array(
-            'kind' => $kind,
-            'selector' => $selector,
-            'style' => $styledb,
-            'weigth' => $sortval,
-            'cssid' => $cssdbid,
+                'kind' => $kind,
+                'selector' => $selector,
+                'style' => $styledb,
+                'weigth' => $sortval,
+                'cssid' => $cssdbid,
         );
 
-        // TODO: update statt insert
         if (drupal_write_record('style_edit_cssstyles', $insertdata))
-                $styledbid = db_last_insert_id('style_edit_cssstyles', 'styleid');
-
-        $styledb = str_replace('{','', $styledb);
-        if ($kind == 'STYLE'){
-            $table[] = array(
-                $styledbid,
-                $selector,
-                str_replace(';', ';<br>',str_replace('}','', $styledb)),
-                l(t(edit), 'admin/settings/styleedit/edit/'.$styledbid),
-            );    
-        }
-        $sortval++;
+            $styledbid = db_last_insert_id('style_edit_cssstyles', 'styleid');
     }
+    $sortval++;
     drupal_set_message(t('Import OK'));
-    //return theme('table',$header,$table,array('id'=>'stylesheet_table'));
 
-    // TODO: Clean up rendering
     return drupal_get_form('style_edit_stylesheet_edit_form',$cssdbid);
 }
 
@@ -244,29 +225,29 @@ function get_style_sections_from_file($file){
     return $arrChunks;
 }
 
-function style_edit_edit_sheet($cssid) {
-    // TODO: implement database listing
-    $header = array(
-        array('data' => t('ID'), 'field' => 'id'),
-        array('data' => t('Class / Element'), 'field' => 'selector'),
-        array('data' => t('CSS'), 'field' => 'style'),
-        array('data' => t('Operation'), 'field' => 'op'),
-        );
-
-    $sql = 'SELECT * FROM {style_edit_cssstyles} WHERE cssid = %d ORDER BY weigth';
-    $result = db_query($sql,$cssid);
-    $table[] = array();
-    while ($r = db_fetch_array($result)) {
-        $table[] = array(
-          $r['styleid'],
-          $r['selector'],
-          $r['style'],
-          $r['weigth'] . ' / ' . $result->num_rows,
-        );
-    }
-    dpm($table);
-    return theme('table',$header,$table,array('id'=>'stylesheet_table'));
-}
+//function style_edit_edit_sheet($cssid) {
+//    // TODO: implement database listing
+//    $header = array(
+//        array('data' => t('ID'), 'field' => 'id'),
+//        array('data' => t('Class / Element'), 'field' => 'selector'),
+//        array('data' => t('CSS'), 'field' => 'style'),
+//        array('data' => t('Operation'), 'field' => 'op'),
+//        );
+//
+//    $sql = 'SELECT * FROM {style_edit_cssstyles} WHERE cssid = %d ORDER BY weigth';
+//    $result = db_query($sql,$cssid);
+//    $table[] = array();
+//    while ($r = db_fetch_array($result)) {
+//        $table[] = array(
+//          $r['styleid'],
+//          $r['selector'],
+//          $r['style'],
+//          $r['weigth'] . ' / ' . $result->num_rows,
+//        );
+//    }
+//    dpm($table);
+//    return theme('table',$header,$table,array('id'=>'stylesheet_table'));
+//}
 
 /**
  *  Load the Stylesheet from the database
@@ -310,7 +291,7 @@ function theme_style_edit_stylesheet_edit_form($form){
         $row = array();
         $row[] = drupal_render($element['selector']);
         $row[] = drupal_render($element['style']);
-        $row[] = drupal_render($element['operation']);
+        $row[] = drupal_render($element['edit_op']);
         $row[] = drupal_render($element['weight']).
                     drupal_render($element['styleid']);
 

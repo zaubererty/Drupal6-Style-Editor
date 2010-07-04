@@ -37,7 +37,6 @@ function style_edit_styleset_edit_form($styleset) {
 function style_edit_stylesheet_edit_form($formstate,$cssid) {
 
     $styles = style_edit_load_stylesheet_db($cssid);
-    dpm($styles);
 
     $form = array();
     $form['css'] = array();
@@ -56,7 +55,7 @@ function style_edit_stylesheet_edit_form($formstate,$cssid) {
                         '#type' => 'markup',
                         '#value' => $style['style'],
                 ),
-                'operation' => array(
+                'edit_op' => array(
                         '#type' => 'markup',
                         '#value' => l(t(edit), 'admin/settings/styleedit/editstyle/'.$style['styleid']),
                 ),
