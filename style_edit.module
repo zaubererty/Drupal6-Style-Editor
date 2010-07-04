@@ -249,23 +249,6 @@ function get_style_sections_from_file($file){
 //    return theme('table',$header,$table,array('id'=>'stylesheet_table'));
 //}
 
-/**
- *  Load the Stylesheet from the database
- *
- * @param   int     $cssid  ID of the stylesheed to load
- * @return  array           List of items and count field
- */
-
-function style_edit_load_stylesheet_db($cssid){
-    $sql = 'SELECT * FROM {style_edit_cssstyles} WHERE cssid = %d ORDER BY weigth';
-    $result = db_query($sql,$cssid);
-    $table[] = array();
-    while ($r = db_fetch_array($result)) {
-        $table[] = $r;
-    }
-    $table['count'] = $result->num_rows;
-    return $table;
-}
 
 /**
  * Implementation of hook_theme().

@@ -2,36 +2,55 @@
 /* 
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
- */
+*/
 
-function style_edit_styleset_edit_form($styleset) {
+function style_edit_styleset_edit_form($formstate,$styleid) {
+    $data = style_edit_load_stylesection_db($styleid);
+
     $from['sel_cat'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Selector and category'),
-        '#tree' => TRUE,
-        '#collapsible' => TRUE,
-        );
+            '#type' => 'fieldset',
+            '#title' => t('Selector and category'),
+            '#tree' => TRUE,
+            '#collapsible' => TRUE,
+    );
 
     $from['sel_cat']['selector'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Selector'),
-        );
+            '#type' => 'textfield',
+            '#title' => t('Selector'),
+            '#value' => $data[1]['selector'],
+    );
 
-    $from['size_pos'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Size and position'),
-        '#tree' => TRUE,
-        '#collapsible' => TRUE,
-        );
+    $from['css'] = array(
+            '#type' => 'fieldset',
+            '#title' => t('Size and position'),
+            '#tree' => TRUE,
+            '#collapsible' => TRUE,
+    );
 
-    $from['size_pos']['width'] = array(
-        '#type' => 'textarea',
-        '#title' => t('CSS'),
-        '#value' => '',
-        );
+    $from['css']['width'] = array(
+            '#type' => 'textarea',
+            '#title' => t('CSS'),
+            '#value' => clear_brackets($data[1]['style']),
+    );
 
-    dpm($from);
+    $from['styleid'] = array(
+            '#type' => 'hidden',
+            '#value' => $data[1]['styleid'],
+    );
+
+    $form['submit'] = array(
+            '#type' => 'submit',
+            '#value' => t('Save'),
+    );
+
     return $from;
+}
+
+function style_edit_stylesheet_edit_form_submit($form, &$form_state) {
+    //Update the database with the new values
+    $val = $form_state['values'];
+    db_query("UPDATE {style_edit_cssstyles} SET selector = '%s', style = '%s' WHERE styleid = %d LIMIT 1",
+            array($form_state['values'], $item['styleid']));
 }
 
 function style_edit_stylesheet_edit_form($formstate,$cssid) {
@@ -70,14 +89,70 @@ function style_edit_stylesheet_edit_form($formstate,$cssid) {
                 ),
         );
     }
-    
+
     $form['submit'] = array(
             '#type' => 'submit',
             '#value' => t('Save'),
 
     );
-
+    dpm($from);
     return $from;
+}
+
+function style_edit_stylesheet_edit_form_submit($form, &$form_state) {
+    //Update the database with the new values
+    foreach ($form_state['values']['css'] as $item) {
+        db_query('UPDATE {style_edit_cssstyles} SET weight = %d WHERE styleid = %d LIMIT 1',
+                array($item['weight'], $item['styleid']));
+    }
+}
+
+/**
+ *  Load the Stylesheet from the database
+ *
+ * @param   int     $cssid  ID of the stylesheed to load
+ * @return  array           List of items and count field
+ */
+
+function style_edit_load_stylesheet_db($cssid) {
+    $sql = 'SELECT * FROM {style_edit_cssstyles} WHERE cssid = %d ORDER BY weigth';
+    $result = db_query($sql,$cssid);
+    $table[] = array();
+    while ($r = db_fetch_array($result)) {
+        $table[] = $r;
+    }
+    $table['count'] = $result->num_rows;
+    return $table;
+}
+
+/**
+ *  Load the Stylesheet from the database
+ *
+ * @param   int     $styleid    ID of the stylesheed section to load
+ * @return  array               List of items
+ */
+
+function style_edit_load_stylesection_db($styleid) {
+    $sql = 'SELECT * FROM {style_edit_cssstyles} WHERE styleid = %d ';
+    $result = db_query($sql,$styleid);
+    $table[] = array();
+    while ($r = db_fetch_array($result)) {
+        $table[] = $r;
+    }
+    return $table;
+}
+
+
+/**
+ *Cleans {}
+ *
+ * @param   string  $text   Text to clean
+ * @return  string          Clean text
+ */
+function clear_brackets($text) {
+    $text = str_replace('{', '', $text);
+    $text = str_replace('}', '', $text);
+    return $text;
 }
 
 ?>
