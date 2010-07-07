@@ -5,30 +5,36 @@
  * and open the template in the editor.
 */
 
-require_once 'style_edit_form.inc';
-
 function style_edit_menu() {
     $items['admin/settings/styleedit'] = array(
-
             'title' => 'Style Editor',
             'description' => 'Edit theme stylesheets',
-            'page callback' => 'style_edit_list_filesystem',
+            'page callback' => 'table_themes',
+            'page arguments' => array('all'),
             'access arguments' => array('view style sheets'),
             'type' => MENU_NORMAL_ITEM,
             //'file' => 'annotate.admin.inc',
             );
     
     $items['admin/settings/styleedit/list'] = array(
-
             'title' => 'List',
-            'page callback' => 'style_edit_list_filesystem',
+            'page callback' => 'table_themes',
+            'page arguments' => array('all'),
             'access arguments' => array('view style sheets'),
             'type' => MENU_DEFAULT_LOCAL_TASK,
             );
 
+    foreach (list_themes() as $key => $value) {
+        $items['admin/settings/styleedit/list/'.$key] = array(
+                'title' => $value->info['name'],
+                'page callback' => 'table_themes',
+                'page arguments' => array(4),
+                'access arguments' => array('view style sheets'),
+                'type' => MENU_LOCAL_TASK,
+        );
+    }
 
     $items['admin/settings/styleedit/editsheet/%'] = array(
-
             'title' => 'Edit Stylesheet',
             'page callback' => 'drupal_get_form',
             'page arguments' => array('style_edit_stylesheet_edit_form',4),
@@ -38,16 +44,7 @@ function style_edit_menu() {
             );
 
 
-    $items['admin/settings/styleedit/listtheme/%'] = array(
-
-            'title' => 'View',
-            'page callback' => 'style_edit_theme_listtheme',
-            'page arguments' => array(4),
-            'access arguments' => array('view style sheets'),
-            );
-
     $items['admin/settings/styleedit/import/%/%/%'] = array(
-
             'title' => 'Import',
             'page callback' => 'style_edit_import_theme',
             'page arguments' => array(4,5,6),
@@ -55,7 +52,6 @@ function style_edit_menu() {
             );
 
     $items['admin/settings/styleedit/editstyle/%'] = array(
-
             'title' => 'Edit',
             'page callback' => 'drupal_get_form',
             'page arguments' => array('style_edit_styleset_edit_form',4),
@@ -74,25 +70,11 @@ function style_edit_perm() {
         );
 }
 
-function style_edit_settings(){
-
-    $form['list'] = array(
-        '#type' => 'textarea',
-        '#title' => 'List',
-    );
-return $form;
-}
-
-
-function style_edit_list_filesystem(){
-    return build_table(query_style_array());
-}
-
-function style_edit_theme_listtheme($theme){
+function table_themes($theme = 'all'){
     return build_table(query_style_array($theme));
 }
 
-function query_style_array($theme = 'all'){
+function query_style_array($theme){
 
     foreach (list_themes() as $themesysname => $themedetails) {
         if ($theme == $themesysname or $theme == 'all')
@@ -116,7 +98,7 @@ function build_table($rows){
             foreach ($st_value as $key => $style){
                 $action_links = create_action_links($value['name'],$st_key,$key,$style);
                 $table[] = array(
-                    l($value['info']['name'],'admin/settings/styleedit/listtheme/'.$value['name']),
+                    $value['info']['name'],
                     $st_key . ' => ' . $style,
                     $action_links['import'],
                     $action_links['edit']
@@ -149,7 +131,7 @@ function create_action_links($systemname, $media, $filename, $path){
 }
 
 function style_edit_import_theme($theme,$stylesesction,$stylesheet) {
-    // TODO: update statt insert
+    // TODO: update instatt of insert
 
     $info = query_style_array($theme);
     $cssfilename = $info[0]['stylesheets'][$stylesesction][$stylesheet];
@@ -199,15 +181,17 @@ function style_edit_import_theme($theme,$stylesesction,$stylesheet) {
                 'kind' => $kind,
                 'selector' => $selector,
                 'style' => $styledb,
-                'weigth' => $sortval,
+                'weight' => $sortval,
                 'cssid' => $cssdbid,
         );
 
         if (drupal_write_record('style_edit_cssstyles', $insertdata))
             $styledbid = db_last_insert_id('style_edit_cssstyles', 'styleid');
-    }
     $sortval++;
+    }
     drupal_set_message(t('Import OK'));
+
+    require_once 'style_edit_form.inc';
 
     return drupal_get_form('style_edit_stylesheet_edit_form',$cssdbid);
 }
@@ -225,68 +209,17 @@ function get_style_sections_from_file($file){
     return $arrChunks;
 }
 
-//function style_edit_edit_sheet($cssid) {
-//    // TODO: implement database listing
-//    $header = array(
-//        array('data' => t('ID'), 'field' => 'id'),
-//        array('data' => t('Class / Element'), 'field' => 'selector'),
-//        array('data' => t('CSS'), 'field' => 'style'),
-//        array('data' => t('Operation'), 'field' => 'op'),
-//        );
-//
-//    $sql = 'SELECT * FROM {style_edit_cssstyles} WHERE cssid = %d ORDER BY weigth';
-//    $result = db_query($sql,$cssid);
-//    $table[] = array();
-//    while ($r = db_fetch_array($result)) {
-//        $table[] = array(
-//          $r['styleid'],
-//          $r['selector'],
-//          $r['style'],
-//          $r['weigth'] . ' / ' . $result->num_rows,
-//        );
-//    }
-//    dpm($table);
-//    return theme('table',$header,$table,array('id'=>'stylesheet_table'));
-//}
-
-
 /**
  * Implementation of hook_theme().
  */
 function style_edit_theme($existing, $type, $theme, $path) {
+    //dargs();
     return array(
             'style_edit_stylesheet_edit_form' => array(
-                    'arguments' => array('form' => NULL),
+                    'arguments' => array('form','cssid'),
+                    'file' => 'style_edit_form.inc',
             ),
     );
-}
-
-function theme_style_edit_stylesheet_edit_form($form){
-    drupal_add_tabledrag('css_table', 'order', 'sibling', 'weight-group');
-
-    $header = array(t('Selector'),t('Style'),t('Operation'),'Weight');
-    foreach (element_children($form['css']) as $key) {
-
-        $element = &$form['css'][$key];
-        $element['weight']['#attributes']['class'] = 'weight-group';
-        $element['itemid']['#attributes']['class'] = 'itemid';
-
-        $row = array();
-        $row[] = drupal_render($element['selector']);
-        $row[] = drupal_render($element['style']);
-        $row[] = drupal_render($element['edit_op']);
-        $row[] = drupal_render($element['weight']).
-                    drupal_render($element['styleid']);
-
-        //Add a draggable class to every table row (<tr>)
-        $rows[] = array('data' => $row, 'class' => 'draggable');
-    }
-
-    $output = theme('table', $header, $rows, array('id' => 'css_table'));
-
-    $output .= drupal_render($form);
-
-    return $output;
 }
 
 ?>

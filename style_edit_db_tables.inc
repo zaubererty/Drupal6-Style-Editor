@@ -89,7 +89,7 @@ function style_edit_schema_cssstyles() {
                 'not null' => TRUE,
                 'description' => t('CSS functiones'),
             ),
-            'weigth' => array(
+            'weight' => array(
                 'type' => 'int',
                 'not null' => TRUE,
                 'description' => t('Sorting info'),
