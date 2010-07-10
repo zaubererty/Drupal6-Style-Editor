@@ -213,7 +213,6 @@ function get_style_sections_from_file($file){
  * Implementation of hook_theme().
  */
 function style_edit_theme($existing, $type, $theme, $path) {
-    //dargs();
     return array(
             'style_edit_stylesheet_edit_form' => array(
                     'arguments' => array('form','cssid'),
@@ -221,5 +220,6 @@ function style_edit_theme($existing, $type, $theme, $path) {
             ),
     );
 }
+
 
 ?>

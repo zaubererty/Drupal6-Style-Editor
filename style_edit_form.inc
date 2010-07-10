@@ -67,13 +67,9 @@ function style_edit_stylesheet_edit_form($formstate, $cssid = 1) {
     $form['styleitems']['#tree'] = TRUE;
     //$form['styleitems']['#theme'] = 'style_edit_stylesheet_edit_form';
 
-    $xx = 0;
     foreach ($styles as $key => $style) {
 
         if (count($style) < 2) continue;
-
-        if ($xx > 10) continue;
-        $xx++;
 
         $sel = $style['selector'];
         $css = escape_html($style['style']);
@@ -87,7 +83,7 @@ function style_edit_stylesheet_edit_form($formstate, $cssid = 1) {
             '#value' => $css,
         );
         $form['styleitems'][$key]['edit_op'] = array(
-            '#value' => $sid,
+            '#value' => l(t('edit'),'admin/settings/styleedit/editstyle/'.$sid),
         );
         $form['styleitems'][$key]['sort'] = array(
             '#type' => 'weight',
@@ -95,7 +91,7 @@ function style_edit_stylesheet_edit_form($formstate, $cssid = 1) {
             '#default_value' => $sort,
         );
         $form['styleitems'][$key]['sid'] = array(
-            '#input' => 'hidden',
+            '#input' => 'value',
             '#value' => $sid,
         );
     }
@@ -103,41 +99,38 @@ function style_edit_stylesheet_edit_form($formstate, $cssid = 1) {
     $form['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Save'),
-        '#prefix' => '<br><div class="poll-form">',
-        '#suffix' => '</div>',
     );
 
+    $form['submit']['#submit'][] = 'style_edit_stylesheet_edit_form_submit';
 
-    //dpm($form['submit']);
     return $form;
 }
 
 function style_edit_stylesheet_edit_form_submit($form, &$form_state) {
     //Update the database with the new values'
-    dargs();
-    foreach ($form_state['values']['css'] as $item) {
+    //dargs();
+    foreach ($form_state['values']['styleitems'] as $item) {
         db_query('UPDATE {style_edit_cssstyles} SET weight = %d WHERE styleid = %d LIMIT 1',
-                array($item['weight'], $item['id']));
-        drupal_set_message('Saved ID'.$item['id']);
+                array($item['sort'], $item['sid']));
+        drupal_set_message('Saved ID'.$item['sid']);
     }
 }
 
 function theme_style_edit_stylesheet_edit_form($form){
-    drupal_add_tabledrag('css_table', 'order', 'sibling', 'sort');
 
-    $header = array('',t('Selector'),t('Style'),t('Operation'),'sort');
+    drupal_add_tabledrag('css_table', 'order', 'sibling', 'lsort');
+    $header = array('*',t('Selector'),t('Style'),t('Operation'),'sort');
     foreach (element_children($form['styleitems']) as $key) {
 
-        $element = &$form['styleitems'][$key];
-        $element['sort']['#attributes']['class'] = 'sort';
-        $element['itemid']['#attributes']['class'] = 'itemid';
+        $form['styleitems'][$key]['sort']['#attributes']['class'] = 'lsort';
+        $form['styleitems'][$key]['itemid']['#attributes']['class'] = 'itemid';
 
         $row = array('');
-        $row[] = drupal_render($element['selector']);
-        $row[] = drupal_render($element['style']);
-        $row[] = drupal_render($element['edit_op']);
-        $row[] = drupal_render($element['sort']).
-                    drupal_render($element['sid']);
+        $row[] = drupal_render($form['styleitems'][$key]['selector']);
+        $row[] = drupal_render($form['styleitems'][$key]['style']);
+        $row[] = drupal_render($form['styleitems'][$key]['edit_op']);
+        $row[] = drupal_render($form['styleitems'][$key]['sort']).
+                    drupal_render($form['styleitems'][$key]['sid']);
 
         //Add a draggable class to every table row (<tr>)
         $rows[] = array('data' => $row, 'class' => 'draggable');
@@ -145,7 +138,8 @@ function theme_style_edit_stylesheet_edit_form($form){
 
     $output = theme('table', $header, $rows, array('id' => 'css_table'));
 
-    $output .= drupal_render($from);
+    $output .= drupal_render($form);
+
     return $output;
 }
 
