@@ -56,6 +56,11 @@ function style_edit_schema_cssimport() {
                 'unsigned' => true,
                 'description' => t('last imput of the given CSS file'),
             ),
+            'udbtimestamp' => array(
+                'type' => 'int',
+                'unsigned' => true,
+                'description' => t('last edit in DB to that sheet'),
+            ),
         ),
         'primary key' => array(
             'cssid'

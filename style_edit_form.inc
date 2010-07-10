@@ -4,8 +4,8 @@
  * and open the template in the editor.
 */
 
-function style_edit_styleset_edit_form($formstate,$styleid) {
-    $data = style_edit_load_stylesection_db($styleid);
+function style_edit_styleset_edit_form($formstate, $theme, $styleid) {
+    $data = get_stylesection_db($styleid);
 
     $form = array();
     
@@ -20,6 +20,16 @@ function style_edit_styleset_edit_form($formstate,$styleid) {
             '#type' => 'textfield',
             '#title' => t('Selector'),
             '#default_value' => $data[1]['selector'],
+    );
+
+    $from['sel_cat']['kind'] = array(
+            '#type' => 'select',
+            '#title' => t('Type'),
+            '#default_value' => $data[1]['kind'],
+            '#options' => array(
+                'COMMENT' => t('Comment'),
+                'STYLE' => t('Style'),
+             ),
     );
 
     $from['style'] = array(
@@ -41,6 +51,11 @@ function style_edit_styleset_edit_form($formstate,$styleid) {
             '#value' => $data[1]['styleid'],
     );
     
+    $from['cssid'] = array(
+            '#type' => 'value',
+            '#value' => $data[1]['cssid'],
+    );
+
     $from['submit'] = array(
             '#type' => 'submit',
             '#value' => t('save'),
@@ -53,13 +68,28 @@ function style_edit_styleset_edit_form_submit($form, &$form_state) {
     //Update the database with the new values
     //dargs();
     $val = $form_state['values'];
+    switch ($val['sel_cat']['kind']) {
+        case 'STYLE':
+            $insert_val = array($val['sel_cat']['selector'],'{'.$val['style']['css'].'}' ,$val['styleid']);
+            break;
+        case 'COMMENT':
+            $insert_val = array($val['sel_cat']['selector'],$val['style']['css'] ,$val['styleid']);
+            break;
+        default:
+            drupal_set_message(t('Type not known!'), 'error');
+            break;
+    }
     db_query("UPDATE {style_edit_cssstyles} SET selector = '%s', style = '%s' WHERE styleid = %d LIMIT 1",
-            array($val['sel_cat']['selector'],'{'.$val['style']['css'].'}' ,$val['styleid']));
+            $insert_val);
+
+    db_query('UPDATE {style_edit_cssimport} SET udbtimestamp = %d WHERE cssid = %d LIMIT 1',
+            array(time(),$val['cssid']));
+
     drupal_set_message(t('Saved style ID '. $val['styleid']));
 }
 
-function style_edit_stylesheet_edit_form($formstate, $cssid = 1) {
-    $styles = style_edit_get_stylesheet_db($cssid);
+function style_edit_stylesheet_edit_form($formstate, $theme, $cssid) {
+    $styles = get_stylesheet_db($cssid);
 
     $form = array();
 
@@ -83,7 +113,8 @@ function style_edit_stylesheet_edit_form($formstate, $cssid = 1) {
             '#value' => $css,
         );
         $form['styleitems'][$key]['edit_op'] = array(
-            '#value' => l(t('edit'),'admin/settings/styleedit/editstyle/'.$sid),
+            '#value' => l(t('edit'),'admin/settings/styleedit/list/'
+                    .$theme.'/editstyle/'.$sid),
         );
         $form['styleitems'][$key]['sort'] = array(
             '#type' => 'weight',
@@ -96,30 +127,38 @@ function style_edit_stylesheet_edit_form($formstate, $cssid = 1) {
         );
     }
 
+    $form['cssid'] = array(
+        '#type' => 'hidden',
+        '#value' => $cssid,
+    );
+
     $form['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Save'),
     );
-
-    $form['submit']['#submit'][] = 'style_edit_stylesheet_edit_form_submit';
 
     return $form;
 }
 
 function style_edit_stylesheet_edit_form_submit($form, &$form_state) {
     //Update the database with the new values'
-    //dargs();
     foreach ($form_state['values']['styleitems'] as $item) {
         db_query('UPDATE {style_edit_cssstyles} SET weight = %d WHERE styleid = %d LIMIT 1',
                 array($item['sort'], $item['sid']));
-        drupal_set_message('Saved ID'.$item['sid']);
     }
+
+    drupal_set_message(t('Saved style sheet to database'));
+
+    $time = save_stylesheet_to_fs($form_state['values']['cssid']);
+    
+    db_query('UPDATE {style_edit_cssimport} SET udbtimestamp = %d WHERE cssid = %d LIMIT 1',
+            array($time,$form_state['values']['cssid']));
 }
 
 function theme_style_edit_stylesheet_edit_form($form){
 
     drupal_add_tabledrag('css_table', 'order', 'sibling', 'lsort');
-    $header = array('*',t('Selector'),t('Style'),t('Operation'),'sort');
+    $header = array('',t('Selector'),t('Style'),t('Operation'),'sort');
     foreach (element_children($form['styleitems']) as $key) {
 
         $form['styleitems'][$key]['sort']['#attributes']['class'] = 'lsort';
@@ -151,7 +190,7 @@ function theme_style_edit_stylesheet_edit_form($form){
  * @return  array           List of items and count field
  */
 
-function style_edit_get_stylesheet_db($cssid) {
+function get_stylesheet_db($cssid) {
     $sql = 'SELECT * FROM {style_edit_cssstyles} WHERE cssid = %d ORDER BY weight';
     $result = db_query($sql,$cssid);
     $table[] = array();
@@ -169,7 +208,7 @@ function style_edit_get_stylesheet_db($cssid) {
  * @return  array               List of items
  */
 
-function style_edit_load_stylesection_db($styleid) {
+function get_stylesection_db($styleid) {
     $sql = 'SELECT * FROM {style_edit_cssstyles} WHERE styleid = %d ';
     $result = db_query($sql,$styleid);
     $table[] = array();
@@ -202,6 +241,35 @@ function escape_html($text) {
     $text = str_replace('<', '&lt;', $text);
     $text = str_replace('>', '&gt;', $text);
     return $text;
+}
+
+function save_stylesheet_to_fs($cssid) {
+
+    $sql = "SELECT * FROM {style_edit_cssimport} WHERE cssid = %d";
+    $result = db_query($sql,$cssid);
+    $cssrow = db_fetch_array($result);
+
+    $stylesections = get_stylesheet_db($cssid);
+
+    $cssfile = $cssrow['path'];
+
+    if (is_writable($cssfile)){
+        $fhandle = fopen($cssfile.'.test', 'w+');
+        foreach ($stylesections as $section) {
+
+            if (count($section) < 2) continue;
+
+            fwrite($fhandle, $section['selector']);
+            fwrite($fhandle, $section['style']);
+            fwrite($fhandle, chr(10).chr(13));
+        }
+        fclose($fhandle);
+        drupal_set_message(t('Sucsessfull writen @file',array('@file' => basename($cssfile))));
+    }else {
+        drupal_set_message(t('Error while writing @file',array('@file' => basename($cssfile))));
+    }
+
+    return filemtime($cssrow['path']);
 }
 
 ?>

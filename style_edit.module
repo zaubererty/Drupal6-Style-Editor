@@ -34,13 +34,13 @@ function style_edit_menu() {
         );
     }
 
-    $items['admin/settings/styleedit/editsheet/%'] = array(
+    $items['admin/settings/styleedit/list/%/editsheet/%'] = array(
             'title' => 'Edit Stylesheet',
             'page callback' => 'drupal_get_form',
-            'page arguments' => array('style_edit_stylesheet_edit_form',4),
+            'page arguments' => array('style_edit_stylesheet_edit_form',4,6),
             'access arguments' => array('edit style sheets'),
             'file' => 'style_edit_form.inc',
-            'type' => MENU_LOCAL_TASK,
+            //'type' => MENU_LOCAL_TASK,
             );
 
 
@@ -51,10 +51,10 @@ function style_edit_menu() {
             'access arguments' => array('import style sheets'),
             );
 
-    $items['admin/settings/styleedit/editstyle/%'] = array(
+    $items['admin/settings/styleedit/list/%/editstyle/%'] = array(
             'title' => 'Edit',
             'page callback' => 'drupal_get_form',
-            'page arguments' => array('style_edit_styleset_edit_form',4),
+            'page arguments' => array('style_edit_styleset_edit_form',4,6),
             'access arguments' => array('edit style sheets'),
             'file' => 'style_edit_form.inc',
             );
@@ -71,7 +71,7 @@ function style_edit_perm() {
 }
 
 function table_themes($theme = 'all'){
-    return build_table(query_style_array($theme));
+    return build_sheet_table(query_style_array($theme));
 }
 
 function query_style_array($theme){
@@ -83,11 +83,11 @@ function query_style_array($theme){
     return $rows;
 }
 
-function build_table($rows){
+function build_sheet_table($rows){
     $header = array(
         array('data' => t('Theme'), 'field' => 'name'),
         array('data' => t('Type'), 'field' => 'style'),
-        array('data' => t('Operation'), 'field' => 'op'),
+        array('data' => t('Operation'), 'field' => 'op', 'colspan' => 2),
         );
 
     $table[] = array();
@@ -121,7 +121,8 @@ function create_action_links($systemname, $media, $filename, $path){
         $cssid = db_result($result);
         $links['import'] = l(t('reimport'),'admin/settings/styleedit/import/'.
                 $systemname.'/'.$media .'/'.$filename);
-        $links['edit'] = l(t('edit'),'admin/settings/styleedit/editsheet/'.$cssid);
+        $links['edit'] = l(t('edit'),'admin/settings/styleedit/list/'
+                .$systemname.'/editsheet/'.$cssid);
     }else {
         $links['import'] = l(t('import'),'admin/settings/styleedit/import/'.
                 $systemname.'/'.$media .'/'.$filename);
@@ -144,7 +145,8 @@ function style_edit_import_theme($theme,$stylesesction,$stylesheet) {
             'systemname' => $theme,
             'filename' => $stylesheet,
             'path' => $cssfilename,
-            'ufiletimestamp' => 1,
+            'ufiletimestamp' => filemtime($cssfilename),
+            'udbtimestamp' => filemtime($cssfilename),
     );
 
     // TODO: check timestamp
@@ -193,7 +195,7 @@ function style_edit_import_theme($theme,$stylesesction,$stylesheet) {
 
     require_once 'style_edit_form.inc';
 
-    return drupal_get_form('style_edit_stylesheet_edit_form',$cssdbid);
+    return drupal_get_form('style_edit_stylesheet_edit_form',$theme,$cssdbid);
 }
 
 function get_style_sections_from_file($file){
