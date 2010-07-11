@@ -5,6 +5,8 @@
  * and open the template in the editor.
 */
 
+// TODO: Interact with theme editor module
+
 function style_edit_menu() {
     $items['admin/settings/styleedit'] = array(
             'title' => 'Style Editor',
@@ -110,17 +112,30 @@ function build_sheet_table($rows){
     return theme('table',$header,$table);
 }
 
-function create_action_links($systemname, $media, $filename, $path){
+function create_action_links($systemname, $media, $filename, $path) {
 
     $links = array();
-    $sql = "SELECT cssid FROM {style_edit_cssimport} ".
-        "WHERE systemname = '%s' AND path = '%s'";
+    $sql = "SELECT * FROM {style_edit_cssimport} ".
+            "WHERE systemname = '%s' AND path = '%s'";
     $result = db_query($sql,array($systemname,$path));
 
-    if ($result->num_rows > 0){
-        $cssid = db_result($result);
-        $links['import'] = l(t('reimport'),'admin/settings/styleedit/import/'.
-                $systemname.'/'.$media .'/'.$filename);
+    if ($result->num_rows > 0) {
+        $row = db_fetch_array($result);
+        $cssid = $row['cssid'];
+        $dbfiletimestamp = (int)$row['ufiletimestamp'];
+
+        // Check for changes in file system
+        if ($dbfiletimestamp < filemtime($row['path'])) {
+            $links['import'] = l(t('reimport'),'admin/settings/styleedit/import/'.
+                    $systemname.'/'.$media .'/'.$filename);
+
+            //Warn on unsaved changes
+            if ((int)$row['udbtimestamp'] > $dbfiletimestamp) {
+                drupal_set_message(
+                        t('You may lose DB changes on %theme with a reimport',
+                        array('%theme' => $row['name'])), 'warning');
+            }
+        }
         $links['edit'] = l(t('edit'),'admin/settings/styleedit/list/'
                 .$systemname.'/editsheet/'.$cssid);
     }else {
@@ -137,16 +152,17 @@ function style_edit_import_theme($theme,$stylesesction,$stylesheet) {
     $info = query_style_array($theme);
     $cssfilename = $info[0]['stylesheets'][$stylesesction][$stylesheet];
     $styles = get_style_sections_from_file($cssfilename);
+    $filetimestamp = filemtime($cssfilename);
 
     $insertdata = array(
-            'name' => $info['info']['name'],
+            'name' => $info[0]['info']['name'],
             // TODO: source dynamic
             'source' => 'theme',
             'systemname' => $theme,
             'filename' => $stylesheet,
             'path' => $cssfilename,
-            'ufiletimestamp' => filemtime($cssfilename),
-            'udbtimestamp' => filemtime($cssfilename),
+            'ufiletimestamp' => $filetimestamp,
+            'udbtimestamp' => $filetimestamp,
     );
 
     // TODO: check timestamp
@@ -163,6 +179,10 @@ function style_edit_import_theme($theme,$stylesesction,$stylesheet) {
         $cssdbid = $cssfilerow['cssid'];
         $sql = "DELETE FROM {style_edit_cssstyles} WHERE cssid = %d";
         $result = db_query($sql,$cssdbid);
+        db_query('UPDATE {style_edit_cssimport}
+            SET udbtimestamp = %d, ufiletimestamp = %d
+            WHERE cssid = %d LIMIT 1',
+                array($filetimestamp,$filetimestamp,$cssdbid));
     }
 
     $sortval = 1;
@@ -195,7 +215,9 @@ function style_edit_import_theme($theme,$stylesesction,$stylesheet) {
 
     require_once 'style_edit_form.inc';
 
-    return drupal_get_form('style_edit_stylesheet_edit_form',$theme,$cssdbid);
+    return drupal_goto('admin/settings/styleedit/list/'
+                .$theme.'/editsheet/'.$cssdbid);
+    //return drupal_get_form('style_edit_stylesheet_edit_form',$theme,$cssdbid);
 }
 
 function get_style_sections_from_file($file){

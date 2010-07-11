@@ -58,7 +58,7 @@ function style_edit_styleset_edit_form($formstate, $theme, $styleid) {
 
     $from['submit'] = array(
             '#type' => 'submit',
-            '#value' => t('save'),
+            '#value' => t('Save'),
     );
 
     return $from;
@@ -86,10 +86,23 @@ function style_edit_styleset_edit_form_submit($form, &$form_state) {
             array(time(),$val['cssid']));
 
     drupal_set_message(t('Saved style ID '. $val['styleid']));
+    
+    $sql = 'SELECT * FROM {style_edit_cssimport} WHERE cssid = %d';
+    $result = db_query($sql,$val['cssid']);
+    $cssinfo = db_fetch_array($result);
+
+    $form_state['redirect'] = 'admin/settings/styleedit/list/'
+                .$cssinfo['systemname'].'/editsheet/'.$val['cssid'];
 }
 
 function style_edit_stylesheet_edit_form($formstate, $theme, $cssid) {
     $styles = get_stylesheet_db($cssid);
+
+    //Check for unsaved styles
+    $result = db_query('SELECT * FROM {style_edit_cssimport} WHERE cssid = %d',$cssid);
+    $cssinfo = db_fetch_array($result);
+    if ($cssinfo['ufiletimestamp'] < $cssinfo['udbtimestamp'])
+        drupal_set_message(t('You have unsaved changes!'), 'warning');
 
     $form = array();
 
@@ -147,12 +160,14 @@ function style_edit_stylesheet_edit_form_submit($form, &$form_state) {
                 array($item['sort'], $item['sid']));
     }
 
-    drupal_set_message(t('Saved style sheet to database'));
+    drupal_set_message(t('Saved stylesheet to database'));
 
     $time = save_stylesheet_to_fs($form_state['values']['cssid']);
     
-    db_query('UPDATE {style_edit_cssimport} SET udbtimestamp = %d WHERE cssid = %d LIMIT 1',
-            array($time,$form_state['values']['cssid']));
+    db_query('UPDATE {style_edit_cssimport} 
+        SET udbtimestamp = %d, ufiletimestamp = %d
+        WHERE cssid = %d LIMIT 1',
+            array($time,$time,$form_state['values']['cssid']));
 }
 
 function theme_style_edit_stylesheet_edit_form($form){
@@ -254,7 +269,7 @@ function save_stylesheet_to_fs($cssid) {
     $cssfile = $cssrow['path'];
 
     if (is_writable($cssfile)){
-        $fhandle = fopen($cssfile.'.test', 'w+');
+        $fhandle = fopen($cssfile, 'w+');
         foreach ($stylesections as $section) {
 
             if (count($section) < 2) continue;
