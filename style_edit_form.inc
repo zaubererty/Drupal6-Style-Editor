@@ -8,61 +8,15 @@
 function style_edit_styleset_edit_form($formstate, $theme, $styleid) {
     $data = get_stylesection_db($styleid);
 
-    $form = array();
-    
-    $from['sel_cat'] = array(
-            '#type' => 'fieldset',
-            '#title' => t('Selector and category'),
-            '#tree' => TRUE,
-            '#collapsible' => TRUE,
-    );
+    $form = formoutline_edit_styleset();
 
-    $from['sel_cat']['selector'] = array(
-            '#type' => 'textfield',
-            '#title' => t('Selector'),
-            '#default_value' => $data[1]['selector'],
-    );
-
-    $from['sel_cat']['kind'] = array(
-            '#type' => 'select',
-            '#title' => t('Type'),
-            '#default_value' => $data[1]['kind'],
-            '#options' => array(
-                'COMMENT' => t('Comment'),
-                'STYLE' => t('Style'),
-             ),
-    );
-
-    $from['style'] = array(
-            '#type' => 'fieldset',
-            '#title' => t('Styles'),
-            '#tree' => TRUE,
-            '#collapsible' => TRUE,
-    );
-
-    $from['style']['css'] = array(
-            '#type' => 'textarea',
-            '#title' => t('CSS'),
-            '#rows' => 10,
-            '#default_value' => clear_brackets($data[1]['style']),
-    );
-
-    $from['styleid'] = array(
-            '#type' => 'value',
-            '#value' => $data[1]['styleid'],
-    );
-    
-    $from['cssid'] = array(
-            '#type' => 'value',
-            '#value' => $data[1]['cssid'],
-    );
-
-    $from['submit'] = array(
-            '#type' => 'submit',
-            '#value' => t('Save'),
-    );
-
-    return $from;
+    $form['sel_cat']['selector']['#default_value'] = $data['selector'];
+    $form['sel_cat']['kind']['#default_value'] = $data['kind'];
+    $form['style']['css']['#default_value'] = clear_brackets($data['style']);
+    $form['styleid']['#value'] = $data['styleid'];
+    $form['cssid']['#value'] = $data['cssid'];
+	
+    return $form;
 }
 
 function style_edit_styleset_edit_form_submit($form, &$form_state) {
@@ -98,7 +52,7 @@ function style_edit_styleset_edit_form_submit($form, &$form_state) {
 
 function style_edit_stylesheet_edit_form($formstate, $theme, $cssid) {
     $styles = get_stylesheet_db($cssid);
-
+    
     //Check for unsaved styles
     $result = db_query('SELECT * FROM {style_edit_cssimport} WHERE cssid = %d',$cssid);
     $cssinfo = db_fetch_array($result);
@@ -109,7 +63,8 @@ function style_edit_stylesheet_edit_form($formstate, $theme, $cssid) {
 
     $form['styleitems'] = array();
     $form['styleitems']['#tree'] = TRUE;
-    //$form['styleitems']['#theme'] = 'style_edit_stylesheet_edit_form';
+    
+    $itemcount = $styles['count'];
 
     foreach ($styles as $key => $style) {
 
@@ -132,7 +87,7 @@ function style_edit_stylesheet_edit_form($formstate, $theme, $cssid) {
         );
         $form['styleitems'][$key]['sort'] = array(
             '#type' => 'weight',
-            '#delta' => count($styles),
+            '#delta' => $itemcount,
             '#default_value' => $sort,
         );
         $form['styleitems'][$key]['sid'] = array(
@@ -198,22 +153,20 @@ function theme_style_edit_stylesheet_edit_form($form){
     return $output;
 }
 
-
 /**
  *  Load the Stylesheet from the database
  *
  * @param   int     $cssid  ID of the stylesheed to load
  * @return  array           List of items and count field
  */
-
 function get_stylesheet_db($cssid) {
     $sql = 'SELECT * FROM {style_edit_cssstyles} WHERE cssid = %d ORDER BY weight';
     $result = db_query($sql,$cssid);
-    $table[] = array();
+    $table = array();
     while ($r = db_fetch_array($result)) {
         $table[] = $r;
     }
-    //$table['count'] = $result->num_rows;
+    $table['count'] = $result->num_rows;
     return $table;
 }
 
@@ -223,20 +176,14 @@ function get_stylesheet_db($cssid) {
  * @param   int     $styleid    ID of the stylesheed section to load
  * @return  array               List of items
  */
-
 function get_stylesection_db($styleid) {
     $sql = 'SELECT * FROM {style_edit_cssstyles} WHERE styleid = %d ';
     $result = db_query($sql,$styleid);
-    $table[] = array();
-    while ($r = db_fetch_array($result)) {
-        $table[] = $r;
-    }
-    return $table;
+    return db_fetch_array($result);
 }
 
-
 /**
- *Cleans {}
+ * Cleans style on '{''}'
  *
  * @param   string  $text   Text to clean
  * @return  string          Clean text
@@ -288,4 +235,57 @@ function save_stylesheet_to_fs($cssid) {
     return filemtime($cssrow['path']);
 }
 
+function formoutline_edit_styleset() {
+	
+	$form = array();
+    
+    $form['sel_cat'] = array(
+            '#type' => 'fieldset',
+            '#title' => t('Selector and category'),
+            '#tree' => TRUE,
+            '#collapsible' => TRUE,
+    );
+
+    $form['sel_cat']['selector'] = array(
+            '#type' => 'textfield',
+            '#title' => t('Selector'),
+    );
+
+    $form['sel_cat']['kind'] = array(
+            '#type' => 'select',
+            '#title' => t('Type'),
+            '#options' => array(
+                'COMMENT' => t('Comment'),
+                'STYLE' => t('Style'),
+             ),
+    );
+
+    $form['style'] = array(
+            '#type' => 'fieldset',
+            '#title' => t('Styles'),
+            '#tree' => TRUE,
+            '#collapsible' => TRUE,
+    );
+
+    $form['style']['css'] = array(
+            '#type' => 'textarea',
+            '#title' => t('CSS'),
+            '#rows' => 10,
+    );
+
+    $form['styleid'] = array(
+            '#type' => 'value',
+    );
+    
+    $form['cssid'] = array(
+            '#type' => 'value',
+    );
+
+    $form['submit'] = array(
+            '#type' => 'submit',
+            '#value' => t('Save'),
+    );
+    
+	return $form;
+}
 ?>
