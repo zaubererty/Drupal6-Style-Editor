@@ -294,7 +294,7 @@ function outline_text_edit_styleset() {
  *
  * @return An array containing the form elements to be displayed in the node edit form.
  */
-function style_edit_settings_form() {
+function style_edit_settings_form($formstate) {
     $form = array();
     
     $form['edit_setting'] = array(
