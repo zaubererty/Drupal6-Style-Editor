@@ -59,6 +59,12 @@ function style_edit_stylesheet_edit_form($formstate, $theme, $cssid) {
     if ($cssinfo['ufiletimestamp'] < $cssinfo['udbtimestamp'])
         drupal_set_message(t('You have unsaved changes!'), 'warning');
 
+    $breadcrumb = array();
+    $breadcrumb[] = l(t('Home'), '<front>');
+    $breadcrumb[] = l(t('Style Editor'), 'admin/settings/styleedit');
+    $breadcrumb[] = l($cssinfo['name'], 'admin/settings/styleedit/list/'.$theme);
+    drupal_set_breadcrumb($breadcrumb);
+        
     $form = array();
 
     $form['styleitems'] = array();
@@ -101,7 +107,12 @@ function style_edit_stylesheet_edit_form($formstate, $theme, $cssid) {
         '#value' => $cssid,
     );
 
-    $form['submit'] = array(
+    $form['submit_bottom'] = array(
+        '#type' => 'submit',
+        '#value' => t('Save'),
+    );
+    
+    $form['submit_top'] = array(
         '#type' => 'submit',
         '#value' => t('Save'),
     );
@@ -127,6 +138,8 @@ function style_edit_stylesheet_edit_form_submit($form, &$form_state) {
 }
 
 function theme_style_edit_stylesheet_edit_form($form){
+  
+    $output = drupal_render($form['submit_top']);
 
     drupal_add_tabledrag('css_table', 'order', 'sibling', 'lsort');
     $header = array('',t('Selector'),t('Style'),t('Operation'),'sort');
@@ -146,7 +159,7 @@ function theme_style_edit_stylesheet_edit_form($form){
         $rows[] = array('data' => $row, 'class' => 'draggable');
     }
 
-    $output = theme('table', $header, $rows, array('id' => 'css_table'));
+    $output .= theme('table', $header, $rows, array('id' => 'css_table'));
 
     $output .= drupal_render($form);
 
