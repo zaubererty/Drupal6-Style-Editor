@@ -12,10 +12,12 @@ function style_edit_schema() {
 
 function style_edit_install() {
     drupal_install_schema('style_edit');
+    variable_set('style_edit_editor_type','text');
 }
 
 function style_edit_uninstall() {
     drupal_uninstall_schema('style_edit');
+    variable_del('style_edit_editor_type');
 }
 
 ?>

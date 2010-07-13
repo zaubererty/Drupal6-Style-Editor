@@ -15,7 +15,6 @@ function style_edit_menu() {
             'page arguments' => array('all'),
             'access arguments' => array('view style sheets'),
             'type' => MENU_NORMAL_ITEM,
-            //'file' => 'annotate.admin.inc',
             );
     
     $items['admin/settings/styleedit/list'] = array(
@@ -24,6 +23,16 @@ function style_edit_menu() {
             'page arguments' => array('all'),
             'access arguments' => array('view style sheets'),
             'type' => MENU_DEFAULT_LOCAL_TASK,
+            );
+            
+    $items['admin/settings/styleedit/settings'] = array(
+            'title' => 'Settings',
+            'description' => 'Settings for the style edit module',
+            'page callback' => 'drupal_get_form',
+            'page arguments' => array('style_edit_settings_form'),
+            'access arguments' => array('change settings'),
+            'file' => 'style_edit_form.inc',
+            'type' => MENU_LOCAL_TASK,
             );
 
     foreach (list_themes() as $key => $value) {
@@ -69,6 +78,7 @@ function style_edit_perm() {
         'view style sheets',
         'import style sheets',
         'edit style sheets',
+        'change settings',
         );
 }
 

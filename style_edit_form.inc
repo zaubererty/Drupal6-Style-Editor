@@ -8,7 +8,7 @@
 function style_edit_styleset_edit_form($formstate, $theme, $styleid) {
     $data = get_stylesection_db($styleid);
 
-    $form = formoutline_edit_styleset();
+    $form = outline_text_edit_styleset();
 
     $form['sel_cat']['selector']['#default_value'] = $data['selector'];
     $form['sel_cat']['kind']['#default_value'] = $data['kind'];
@@ -235,7 +235,7 @@ function save_stylesheet_to_fs($cssid) {
     return filemtime($cssrow['path']);
 }
 
-function formoutline_edit_styleset() {
+function outline_text_edit_styleset() {
 	
 	$form = array();
     
@@ -288,4 +288,49 @@ function formoutline_edit_styleset() {
     
 	return $form;
 }
+
+/**
+ * Implementation of hook_form().
+ *
+ * @return An array containing the form elements to be displayed in the node edit form.
+ */
+function style_edit_settings_form() {
+    $form = array();
+    
+    $form['edit_setting'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Editor settings'),
+          '#tree' => TRUE,
+          '#collapsible' => TRUE,
+    );
+    $form['edit_setting']['editor_type'] = array(
+          '#type' => 'select', 
+          '#title' => t('Select style editor type'), 
+          '#default_value' => variable_get('style_edit_editor_type','text'),
+          '#options' => array(
+              'text' => t('Text editor'), 
+              'assisted' => t('Formular based editor'), 
+          ),
+          '#description' => t('Global setting for the syleset editor type.'),
+    );
+    
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Save'),
+    );
+  
+    return $form;
+}
+
+/**
+ * Implementation of hook_form_submit().
+ *
+ */
+function style_edit_settings_form_submit($form, &$form_state) {
+    $val = $form_state['values'];
+    variable_set('style_edit_editor_type','text');
+    drupal_set_message(t('Settings saved'));
+    drupal_goto('admin/settings/styleedit/list/');
+}
+
 ?>
