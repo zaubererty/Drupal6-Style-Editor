@@ -62,14 +62,23 @@ function style_edit_menu() {
             'access arguments' => array('import style sheets'),
             );
 
-    $items['admin/settings/styleedit/list/%/editstyle/%'] = array(
-            'title' => 'Edit',
-            'page callback' => 'drupal_get_form',
-            'page arguments' => array('style_edit_styleset_edit_form',4,6),
-            'access arguments' => array('edit style sheets'),
-            'file' => 'style_edit_form.inc',
-            );
-
+    $styleset_ops = array(
+        'Edit' => 'edit',
+        'Delete' => 'delete',
+        'Copy' => 'copy',
+        'Add' => 'add',
+    );
+    
+    foreach ($styleset_ops as $op_title => $op) {
+        $items['admin/settings/styleedit/styleset/%/'.$op.'/%'] = array(
+                'title' => $op_title,
+                'page callback' => 'drupal_get_form',
+                'page arguments' => array('style_edit_styleset_'.$op.'_form',4,6),
+                'access arguments' => array('edit style sheets'),
+                'file' => 'style_edit_form.inc',
+        );
+    }
+    
     return $items;
 }
 

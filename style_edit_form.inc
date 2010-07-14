@@ -192,8 +192,8 @@ function style_edit_stylesheet_edit_form($formstate, $theme, $cssid) {
             '#value' => $css,
         );
         $form['styleitems'][$key]['edit_op'] = array(
-            '#value' => l(t('edit'),'admin/settings/styleedit/list/'
-                    .$theme.'/editstyle/'.$sid),
+            '#value' => l(t('edit'),'admin/settings/styleedit/styleset/'
+                    .$theme.'/edit/'.$sid),
         );
         $form['styleitems'][$key]['sort'] = array(
             '#type' => 'weight',
