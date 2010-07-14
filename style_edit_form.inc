@@ -11,6 +11,13 @@ function style_edit_styleset_edit_form($formstate, $theme, $styleid) {
     // Form with values for text editor
     $form = set_text_editor_style_form_values(outline_text_edit_styleset(), $styleid);
     
+    //Todo set bredcrump complete
+    $breadcrumb = array();
+    $breadcrumb[] = l(t('Home'), '<front>');
+    $breadcrumb[] = l(t('Style Editor'), 'admin/settings/styleedit');
+    $breadcrumb[] = l($theme, 'admin/settings/styleedit/list/'.$theme);
+    drupal_set_breadcrumb($breadcrumb);
+    
     return $form;
 }
 /**
