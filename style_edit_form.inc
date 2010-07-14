@@ -5,37 +5,37 @@
  * and open the template in the editor.
 */
 
+// Style editor
 function style_edit_styleset_edit_form($formstate, $theme, $styleid) {
-    $data = get_stylesection_db($styleid);
 
-    $form = outline_text_edit_styleset();
-
-    $form['sel_cat']['selector']['#default_value'] = $data['selector'];
-    $form['sel_cat']['kind']['#default_value'] = $data['kind'];
-    $form['style']['css']['#default_value'] = clear_brackets($data['style']);
-    $form['styleid']['#value'] = $data['styleid'];
-    $form['cssid']['#value'] = $data['cssid'];
-	
+    // Form with values for text editor
+    $form = set_text_editor_style_form_values(outline_text_edit_styleset(), $styleid);
+    
     return $form;
 }
-
+/**
+ * Implementation of hook_submit()
+ * 
+ * Update the database with the new values
+ * 
+ * @param $form         Current form 
+ * @param $form_state   Submit state from the user
+ */
 function style_edit_styleset_edit_form_submit($form, &$form_state) {
-    //Update the database with the new values
-    //dargs();
     $val = $form_state['values'];
     switch ($val['sel_cat']['kind']) {
         case 'STYLE':
-            $insert_val = array($val['sel_cat']['selector'],'{'.$val['style']['css'].'}' ,$val['styleid']);
+            $update_val = array($val['sel_cat']['selector'],'{'.$val['style']['css'].'}' ,$val['styleid']);
             break;
         case 'COMMENT':
-            $insert_val = array($val['sel_cat']['selector'],$val['style']['css'] ,$val['styleid']);
+            $update_val = array($val['sel_cat']['selector'],$val['style']['css'] ,$val['styleid']);
             break;
         default:
             drupal_set_message(t('Type not known!'), 'error');
             break;
     }
     db_query("UPDATE {style_edit_cssstyles} SET selector = '%s', style = '%s' WHERE styleid = %d LIMIT 1",
-            $insert_val);
+            $update_val);
 
     db_query('UPDATE {style_edit_cssimport} SET udbtimestamp = %d WHERE cssid = %d LIMIT 1',
             array(time(),$val['cssid']));
@@ -50,6 +50,103 @@ function style_edit_styleset_edit_form_submit($form, &$form_state) {
                 .$cssinfo['systemname'].'/editsheet/'.$val['cssid'];
 }
 
+
+/**
+ * Sets the values from data base for the text editor
+ * 
+ *  @param  $form       array   formoutline of text editor
+ *  @param  $styleid    int     record id to load from 'style_edit_cssstyles'
+ *  @return form with values    
+ */
+function set_text_editor_style_form_values($form, $styleid) {
+    $data = get_stylesection_db($styleid);
+
+    $form['sel_cat']['selector']['#default_value'] = $data['selector'];
+    $form['sel_cat']['kind']['#default_value'] = $data['kind'];
+    $form['style']['css']['#default_value'] = clear_brackets($data['style']);
+    $form['styleid']['#value'] = $data['styleid'];
+    $form['cssid']['#value'] = $data['cssid'];
+    $form['edit_type']['#value'] = variable_set('style_edit_editor_type','text');
+    
+    return $form;
+}
+
+function outline_text_edit_styleset() {
+    
+    $form = array();
+    
+    $form['sel_cat'] = array(
+            '#type' => 'fieldset',
+            '#title' => t('Selector and category'),
+            '#tree' => TRUE,
+            '#collapsible' => TRUE,
+    );
+
+    $form['sel_cat']['selector'] = array(
+            '#type' => 'textfield',
+            '#title' => t('Selector'),
+    );
+
+    $form['sel_cat']['kind'] = array(
+            '#type' => 'select',
+            '#title' => t('Type'),
+            '#options' => array(
+                'COMMENT' => t('Comment'),
+                'STYLE' => t('Style'),
+             ),
+    );
+
+    $form['style'] = array(
+            '#type' => 'fieldset',
+            '#title' => t('Styles'),
+            '#tree' => TRUE,
+            '#collapsible' => TRUE,
+    );
+
+    $form['style']['css'] = array(
+            '#type' => 'textarea',
+            '#title' => t('CSS'),
+            '#rows' => 10,
+    );
+
+    $form['styleid'] = array(
+            '#type' => 'value',
+    );
+    
+    $form['cssid'] = array(
+            '#type' => 'value',
+    );
+
+    $form['edit_type'] = array(
+            '#type' => 'value',
+    );
+    
+    $form['submit'] = array(
+            '#type' => 'submit',
+            '#value' => t('Save'),
+    );
+    
+    return $form;
+}
+
+/**
+ *  Load the Stylesheet from the database
+ *
+ * @param   int     $cssid  ID of the stylesheed to load
+ * @return  array           List of items and count field
+ */
+function get_stylesheet_db($cssid) {
+    $sql = 'SELECT * FROM {style_edit_cssstyles} WHERE cssid = %d ORDER BY weight';
+    $result = db_query($sql,$cssid);
+    $table = array();
+    while ($r = db_fetch_array($result)) {
+        $table[] = $r;
+    }
+    $table['count'] = $result->num_rows;
+    return $table;
+}
+
+//Stylesheet Form
 function style_edit_stylesheet_edit_form($formstate, $theme, $cssid) {
     $styles = get_stylesheet_db($cssid);
     
@@ -169,23 +266,6 @@ function theme_style_edit_stylesheet_edit_form($form){
 /**
  *  Load the Stylesheet from the database
  *
- * @param   int     $cssid  ID of the stylesheed to load
- * @return  array           List of items and count field
- */
-function get_stylesheet_db($cssid) {
-    $sql = 'SELECT * FROM {style_edit_cssstyles} WHERE cssid = %d ORDER BY weight';
-    $result = db_query($sql,$cssid);
-    $table = array();
-    while ($r = db_fetch_array($result)) {
-        $table[] = $r;
-    }
-    $table['count'] = $result->num_rows;
-    return $table;
-}
-
-/**
- *  Load the Stylesheet from the database
- *
  * @param   int     $styleid    ID of the stylesheed section to load
  * @return  array               List of items
  */
@@ -248,62 +328,11 @@ function save_stylesheet_to_fs($cssid) {
     return filemtime($cssrow['path']);
 }
 
-function outline_text_edit_styleset() {
-	
-	$form = array();
-    
-    $form['sel_cat'] = array(
-            '#type' => 'fieldset',
-            '#title' => t('Selector and category'),
-            '#tree' => TRUE,
-            '#collapsible' => TRUE,
-    );
 
-    $form['sel_cat']['selector'] = array(
-            '#type' => 'textfield',
-            '#title' => t('Selector'),
-    );
-
-    $form['sel_cat']['kind'] = array(
-            '#type' => 'select',
-            '#title' => t('Type'),
-            '#options' => array(
-                'COMMENT' => t('Comment'),
-                'STYLE' => t('Style'),
-             ),
-    );
-
-    $form['style'] = array(
-            '#type' => 'fieldset',
-            '#title' => t('Styles'),
-            '#tree' => TRUE,
-            '#collapsible' => TRUE,
-    );
-
-    $form['style']['css'] = array(
-            '#type' => 'textarea',
-            '#title' => t('CSS'),
-            '#rows' => 10,
-    );
-
-    $form['styleid'] = array(
-            '#type' => 'value',
-    );
-    
-    $form['cssid'] = array(
-            '#type' => 'value',
-    );
-
-    $form['submit'] = array(
-            '#type' => 'submit',
-            '#value' => t('Save'),
-    );
-    
-	return $form;
-}
+// Settings
 
 /**
- * Implementation of hook_form().
+ * Implementation of style_edit_settings_form().
  *
  * @return An array containing the form elements to be displayed in the node edit form.
  */
@@ -336,7 +365,7 @@ function style_edit_settings_form($formstate) {
 }
 
 /**
- * Implementation of hook_form_submit().
+ * Implementation of style_edit_settings_form_submit().
  *
  */
 function style_edit_settings_form_submit($form, &$form_state) {
