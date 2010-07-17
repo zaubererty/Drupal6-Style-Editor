@@ -1,8 +1,8 @@
 <?php
 // $Id$
-/* 
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * @file
+ * Install, update and uninstall functions for the style_edit module.
  */
 
 function style_edit_schema() {
@@ -12,7 +12,7 @@ function style_edit_schema() {
 
 function style_edit_install() {
     drupal_install_schema('style_edit');
-    variable_set('style_edit_editor_type','text');
+    variable_set('style_edit_editor_type', 'text');
 }
 
 function style_edit_uninstall() {

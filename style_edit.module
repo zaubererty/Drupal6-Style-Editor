@@ -1,31 +1,32 @@
 <?php
 // $Id$
-/* 
+/*
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
-*/
+ */
 
 // TODO: Interact with theme editor module
 
 function style_edit_menu() {
-    $items['admin/settings/styleedit'] = array(
+  $items['admin/settings/styleedit'] = array(
             'title' => 'Style Editor',
-            'description' => 'Edit theme stylesheets',
+            'description' => 'List theme stylesheets',
             'page callback' => 'table_themes',
             'page arguments' => array('all'),
             'access arguments' => array('view style sheets'),
             'type' => MENU_NORMAL_ITEM,
-            );
-    
-    $items['admin/settings/styleedit/list'] = array(
+  );
+
+  $items['admin/settings/styleedit/list'] = array(
             'title' => 'List',
+            'description' => 'List theme stylesheets',
             'page callback' => 'table_themes',
             'page arguments' => array('all'),
             'access arguments' => array('view style sheets'),
             'type' => MENU_DEFAULT_LOCAL_TASK,
-            );
-            
-    $items['admin/settings/styleedit/settings'] = array(
+  );
+
+  $items['admin/settings/styleedit/settings'] = array(
             'title' => 'Settings',
             'description' => 'Settings for the style edit module',
             'page callback' => 'drupal_get_form',
@@ -33,235 +34,238 @@ function style_edit_menu() {
             'access arguments' => array('change settings'),
             'file' => 'style_edit_form.inc',
             'type' => MENU_LOCAL_TASK,
-            );
+  );
 
-    foreach (list_themes() as $key => $value) {
-        $items['admin/settings/styleedit/list/'.$key] = array(
+  foreach (list_themes() as $key => $value) {
+    $items['admin/settings/styleedit/list/' . $key] = array(
                 'title' => $value->info['name'],
+                'description' => 'List ' . $value->info['name'] . ' stylesheets',
                 'page callback' => 'table_themes',
                 'page arguments' => array(4),
                 'access arguments' => array('view style sheets'),
                 'type' => MENU_LOCAL_TASK,
-        );
-    }
+    );
+  }
 
-    $items['admin/settings/styleedit/list/%/editsheet/%'] = array(
-            'title' => 'Edit Stylesheet',
+  $items['admin/settings/styleedit/list/%/editsheet/%'] = array(
+            'title' => 'Edit stylesheet',
             'page callback' => 'drupal_get_form',
-            'page arguments' => array('style_edit_stylesheet_edit_form',4,6),
+            'page arguments' => array('style_edit_stylesheet_edit_form', 4, 6),
             'access arguments' => array('edit style sheets'),
             'file' => 'style_edit_form.inc',
-            //'type' => MENU_LOCAL_TASK,
-            );
+  );
 
 
-    $items['admin/settings/styleedit/import/%/%/%'] = array(
+  $items['admin/settings/styleedit/import/%/%/%'] = array(
             'title' => 'Import',
             'page callback' => 'style_edit_import_theme',
-            'page arguments' => array(4,5,6),
+            'page arguments' => array(4, 5, 6),
             'access arguments' => array('import style sheets'),
-            );
+  );
 
-    $styleset_ops = array(
+  $styleset_ops = array(
         'Edit' => 'edit',
         'Delete' => 'delete',
         'Copy' => 'copy',
         'Add' => 'add',
-    );
-    
-    foreach ($styleset_ops as $op_title => $op) {
-        $items['admin/settings/styleedit/styleset/%/'.$op.'/%'] = array(
+  );
+
+  foreach ($styleset_ops as $op_title => $op) {
+    $items['admin/settings/styleedit/styleset/%/' . $op . '/%'] = array(
                 'title' => $op_title,
                 'page callback' => 'drupal_get_form',
-                'page arguments' => array('style_edit_styleset_'.$op.'_form',4,6),
+                'page arguments' => array('style_edit_styleset_' . $op . '_form', 4, 6),
                 'access arguments' => array('edit style sheets'),
                 'file' => 'style_edit_form.inc',
-        );
-    }
-    
-    return $items;
+    );
+  }
+
+  return $items;
 }
 
 function style_edit_perm() {
-    return array(
+  return array(
         'view style sheets',
         'import style sheets',
         'edit style sheets',
         'change settings',
+  );
+}
+
+function table_themes($theme = 'all') {
+  return build_sheet_table(query_style_array($theme));
+}
+
+function query_style_array($theme) {
+
+  foreach (list_themes() as $themesysname => $themedetails) {
+    if ($theme == $themesysname or $theme == 'all')
+    $rows[] = (array)$themedetails;
+  }
+  return $rows;
+}
+
+function build_sheet_table($rows) {
+  $header = array(
+  array('data' => t('Theme'), 'field' => 'name'),
+  array('data' => t('Type'), 'field' => 'style'),
+  array('data' => t('Operation'), 'field' => 'op', 'colspan' => 2),
+  );
+
+  $table[] = array();
+  $info = array();
+
+  foreach ($rows as $value) {
+    foreach ($value['stylesheets'] as $st_key => $st_value) {
+      foreach ($st_value as $key => $style) {
+        $action_links = create_action_links($value['name'], $st_key, $key, $style);
+        $table[] = array(
+        $value['info']['name'],
+        $st_key . ' => ' . $style,
+        $action_links['import'],
+        $action_links['edit']
         );
-}
-
-function table_themes($theme = 'all'){
-    return build_sheet_table(query_style_array($theme));
-}
-
-function query_style_array($theme){
-
-    foreach (list_themes() as $themesysname => $themedetails) {
-        if ($theme == $themesysname or $theme == 'all')
-            $rows[] = (array)$themedetails;
+      }
     }
-    return $rows;
-}
+  }
 
-function build_sheet_table($rows){
-    $header = array(
-        array('data' => t('Theme'), 'field' => 'name'),
-        array('data' => t('Type'), 'field' => 'style'),
-        array('data' => t('Operation'), 'field' => 'op', 'colspan' => 2),
-        );
-
-    $table[] = array();
-    $info = array();
-
-    foreach ($rows as $value){
-        foreach ($value['stylesheets'] as $st_key => $st_value){
-            foreach ($st_value as $key => $style){
-                $action_links = create_action_links($value['name'],$st_key,$key,$style);
-                $table[] = array(
-                    $value['info']['name'],
-                    $st_key . ' => ' . $style,
-                    $action_links['import'],
-                    $action_links['edit']
-                );
-            }
-        }
-    }
-
-    return theme('table',$header,$table);
+  return theme('table', $header, $table);
 }
 
 function create_action_links($systemname, $media, $filename, $path) {
 
-    $links = array();
-    $sql = "SELECT * FROM {style_edit_cssimport} ".
+  $links = array();
+  $sql = "SELECT * FROM {style_edit_cssimport} ".
             "WHERE systemname = '%s' AND path = '%s'";
-    $result = db_query($sql,array($systemname,$path));
+  $result = db_query($sql, array($systemname, $path));
 
-    if ($result->num_rows > 0) {
-        $row = db_fetch_array($result);
-        $cssid = $row['cssid'];
-        $dbfiletimestamp = (int)$row['ufiletimestamp'];
+  if ($result->num_rows > 0) {
+    $row = db_fetch_array($result);
+    $cssid = $row['cssid'];
+    $dbfiletimestamp = (int)$row['ufiletimestamp'];
 
-        // Check for changes in file system
-        if ($dbfiletimestamp < filemtime($row['path'])) {
-            $links['import'] = l(t('reimport'),'admin/settings/styleedit/import/'.
-                    $systemname.'/'.$media .'/'.$filename);
+    // Check for changes in file system
+    if ($dbfiletimestamp < filemtime($row['path'])) {
+      $links['import'] = l(t('reimport'), 'admin/settings/styleedit/import/' .
+        $systemname . '/' . $media . '/' . $filename);
 
-            //Warn on unsaved changes
-            if ((int)$row['udbtimestamp'] > $dbfiletimestamp) {
-                drupal_set_message(
-                        t('You may lose DB changes on %theme with a reimport',
-                        array('%theme' => $row['name'])), 'warning');
-            }
-        }
-        $links['edit'] = l(t('edit'),'admin/settings/styleedit/list/'
-                .$systemname.'/editsheet/'.$cssid);
-    }else {
-        $links['import'] = l(t('import'),'admin/settings/styleedit/import/'.
-                $systemname.'/'.$media .'/'.$filename);
-        $links['edit'] = '';
+      // Warn on unsaved changes
+      if ((int)$row['udbtimestamp'] > $dbfiletimestamp) {
+        drupal_set_message(
+        t('You may lose DB changes on %theme with a reimport',
+        array('%theme' => $row['name'])), 'warning');
+      }
     }
-    return $links;
+    $links['edit'] = l(t('edit'), 'admin/settings/styleedit/list/' .
+      $systemname . '/editsheet/' . $cssid);
+  }
+  else {
+    $links['import'] = l(t('import'), 'admin/settings/styleedit/import/' .
+     $systemname . '/' . $media . '/' . $filename);
+    $links['edit'] = '';
+  }
+  return $links;
 }
 
-function style_edit_import_theme($theme,$stylesesction,$stylesheet) {
-    // TODO: update instatt of insert
+function style_edit_import_theme($theme, $stylesesction, $stylesheet) {
+  // TODO: update instatt of insert
 
-    $info = query_style_array($theme);
-    $cssfilename = $info[0]['stylesheets'][$stylesesction][$stylesheet];
-    $styles = get_style_sections_from_file($cssfilename);
-    $filetimestamp = filemtime($cssfilename);
+  $info = query_style_array($theme);
+  $cssfilename = $info[0]['stylesheets'][$stylesesction][$stylesheet];
+  $styles = get_style_sections_from_file($cssfilename);
+  $filetimestamp = filemtime($cssfilename);
 
-    $insertdata = array(
+  $insertdata = array(
             'name' => $info[0]['info']['name'],
-            // TODO: source dynamic
+  // TODO: source dynamic
             'source' => 'theme',
             'systemname' => $theme,
             'filename' => $stylesheet,
             'path' => $cssfilename,
             'ufiletimestamp' => $filetimestamp,
             'udbtimestamp' => $filetimestamp,
-    );
+  );
 
-    // TODO: check timestamp
-    $sql = "SELECT cssid,ufiletimestamp FROM {style_edit_cssimport} ".
+  // TODO: check timestamp
+  $sql = "SELECT cssid,ufiletimestamp FROM {style_edit_cssimport} ".
             "WHERE systemname = '%s' AND path = '%s'";
-    $result = db_query($sql,array($theme,$cssfilename));
-    $cssdbid = 0;
+  $result = db_query($sql, array($theme, $cssfilename));
+  $cssdbid = 0;
 
-    if ($result->num_rows == 0) {
-        drupal_write_record('style_edit_cssimport', $insertdata);
-        $cssdbid = db_last_insert_id('style_edit_cssimport', 'cssid');
-    } else {
-        $cssfilerow = db_fetch_array($result);
-        $cssdbid = $cssfilerow['cssid'];
-        $sql = "DELETE FROM {style_edit_cssstyles} WHERE cssid = %d";
-        $result = db_query($sql,$cssdbid);
-        db_query('UPDATE {style_edit_cssimport}
+  if ($result->num_rows == 0) {
+    drupal_write_record('style_edit_cssimport', $insertdata);
+    $cssdbid = db_last_insert_id('style_edit_cssimport', 'cssid');
+  } 
+  else {
+    $cssfilerow = db_fetch_array($result);
+    $cssdbid = $cssfilerow['cssid'];
+    $sql = "DELETE FROM {style_edit_cssstyles} WHERE cssid = %d";
+    $result = db_query($sql, $cssdbid);
+    db_query('UPDATE {style_edit_cssimport}
             SET udbtimestamp = %d, ufiletimestamp = %d
             WHERE cssid = %d LIMIT 1',
-                array($filetimestamp,$filetimestamp,$cssdbid));
+    array($filetimestamp, $filetimestamp, $cssdbid));
+  }
+
+  $sortval = 1;
+  foreach ($styles[0] as $key => $style) {
+
+    if ($styles[2][$key] == '') {
+      $kind = 'COMMENT';
+      $selector = '';
+      $styledb = $style;
+    }
+    else {
+      $line = split('{', $style);
+      $kind = 'STYLE';
+      $selector = $line[0];
+      $styledb = '{' . $line[1];
     }
 
-    $sortval = 1;
-    foreach ($styles[0] as $key => $style) {
-
-        if ($styles[2][$key] == '') {
-            $kind = 'COMMENT';
-            $selector = '';
-            $styledb = $style;
-        }else {
-            $line = split('{', $style);
-            $kind = 'STYLE';
-            $selector = $line[0];
-            $styledb = '{'.$line[1];
-        }
-
-        $insertdata = array(
+    $insertdata = array(
                 'kind' => $kind,
                 'selector' => $selector,
                 'style' => $styledb,
                 'weight' => $sortval,
                 'cssid' => $cssdbid,
-        );
+    );
 
-        if (drupal_write_record('style_edit_cssstyles', $insertdata))
-            $styledbid = db_last_insert_id('style_edit_cssstyles', 'styleid');
+    if (drupal_write_record('style_edit_cssstyles', $insertdata))
+    $styledbid = db_last_insert_id('style_edit_cssstyles', 'styleid');
     $sortval++;
-    }
-    drupal_set_message(t('Import OK'));
+  }
+  drupal_set_message(t('Import OK'));
 
-    require_once 'style_edit_form.inc';
+  require_once 'style_edit_form.inc';
 
-    return drupal_goto('admin/settings/styleedit/list/'
-                .$theme.'/editsheet/'.$cssdbid);
-    //return drupal_get_form('style_edit_stylesheet_edit_form',$theme,$cssdbid);
+  return drupal_goto('admin/settings/styleedit/list/' .
+    $theme . '/editsheet/' . $cssdbid);
+  // return drupal_get_form('style_edit_stylesheet_edit_form',$theme,$cssdbid);
 }
 
-function get_style_sections_from_file($file){
-    $arrChunks = array();
+function get_style_sections_from_file($file) {
+  $arrChunks = array();
 
-    $str_style = file_get_contents($file);
-    $str_style = str_replace("\r", '', $str_style);
-    $str_style = str_replace('/**/', '[__]', $str_style);
-    if (substr($str_style, 0, 2) != '/*'){
-	$str_style = "\n" . $str_style;
-    }
-    preg_match_all('@(/\*.*\*\/)|([^\/}]*{[^}]*})@Us', $str_style, $arrChunks);
-    return $arrChunks;
+  $str_style = file_get_contents($file);
+  $str_style = str_replace("\r", '', $str_style);
+  $str_style = str_replace('/**/', '[__]', $str_style);
+  if (substr($str_style, 0, 2) != '/*') {
+    $str_style = "\n" . $str_style;
+  }
+  preg_match_all('@(/\*.*\*\/)|([^\/}]*{[^}]*})@Us', $str_style, $arrChunks);
+  return $arrChunks;
 }
 
 /**
  * Implementation of hook_theme().
  */
 function style_edit_theme($existing, $type, $theme, $path) {
-    return array(
+  return array(
             'style_edit_stylesheet_edit_form' => array(
-                    'arguments' => array('form','cssid'),
+                    'arguments' => array('form', 'cssid'),
                     'file' => 'style_edit_form.inc',
-            ),
-    );
+  ),
+  );
 }
 
 

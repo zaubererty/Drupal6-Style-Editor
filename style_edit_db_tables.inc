@@ -5,7 +5,7 @@
  * and open the template in the editor.
  */
 
-function style_edit_schema_definition(){
+function style_edit_schema_definition() {
     $schema = array_merge(
             style_edit_schema_cssimport(),
             style_edit_schema_cssstyles()
@@ -26,7 +26,7 @@ function style_edit_schema_cssimport() {
                 'type' => 'varchar',
                 'length' => 255,
                 'not null' => TRUE,
-                'description' => t('Kind of source for the CSS file '),
+                'description' => t('Kind of source for the CSS file'),
             ),
             'name' => array(
                 'type' => 'varchar',
@@ -54,12 +54,12 @@ function style_edit_schema_cssimport() {
             ),
             'ufiletimestamp' => array(
                 'type' => 'int',
-                'unsigned' => true,
+                'unsigned' => TRUE,
                 'description' => t('last imput of the given CSS file'),
             ),
             'udbtimestamp' => array(
                 'type' => 'int',
-                'unsigned' => true,
+                'unsigned' => TRUE,
                 'description' => t('last edit in DB to that sheet'),
             ),
         ),
