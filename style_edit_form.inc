@@ -43,22 +43,27 @@ function style_edit_styleset_edit_form_submit($form, &$form_state) {
       drupal_set_message(t('Type not known!'), 'error');
       break;
   }
-  db_query("UPDATE {style_edit_cssstyles} SET selector = '%s', style = '%s' WHERE styleid = %d LIMIT 1",
+  db_query("UPDATE {style_edit_cssstyles} SET selector = '%s', style = '%s' WHERE styleid = %d",
   $update_val);
+  set_stylesheet_modified($val['cssid']);
+  drupal_set_message(t('Saved style ID @sid', array('@sid' => $val['styleid'])));
 
-  db_query('UPDATE {style_edit_cssimport} SET udbtimestamp = %d WHERE cssid = %d LIMIT 1',
-  array(time(),$val['cssid']));
-
-  drupal_set_message(t('Saved style ID '. $val['styleid']));
-
-  $sql = 'SELECT * FROM {style_edit_cssimport} WHERE cssid = %d';
-  $result = db_query($sql,$val['cssid']);
-  $cssinfo = db_fetch_array($result);
-
-  $form_state['redirect'] = 'admin/settings/styleedit/list/'
-  .$cssinfo['systemname'].'/editsheet/'.$val['cssid'];
+  $form_state['redirect'] = redirect_to_stylescheet($val['cssid']);
 }
 
+function redirect_to_stylescheet($cssid) {
+  $sql = 'SELECT * FROM {style_edit_cssimport} WHERE cssid = %d';
+  $result = db_query($sql, $cssid);
+  $cssinfo = db_fetch_array($result);
+
+  return 'admin/settings/styleedit/list/'
+    . $cssinfo['systemname'] . '/editsheet/' . $cssid; 
+}
+
+function set_stylesheet_modified($cssid) {
+  db_query('UPDATE {style_edit_cssimport} SET udbtimestamp = %d WHERE cssid = %d',
+  array(time(),$cssid));
+}
 
 /**
  * Sets the values from data base for the text editor
@@ -266,7 +271,7 @@ function style_edit_stylesheet_edit_form_submit($form, &$form_state) {
 
   db_query('UPDATE {style_edit_cssimport}
         SET udbtimestamp = %d, ufiletimestamp = %d
-        WHERE cssid = %d LIMIT 1',
+        WHERE cssid = %d',
   array($time,$time,$form_state['values']['cssid']));
 }
 
@@ -368,7 +373,7 @@ function save_stylesheet_to_fs($cssid) {
 
       fwrite($fhandle, $section['selector']);
       fwrite($fhandle, $section['style']);
-      fwrite($fhandle, chr(10).chr(13));
+      fwrite($fhandle, chr(10).chr(13));  // change to "\n"
     }
     fclose($fhandle);
     drupal_set_message(t('Sucsessfull writen @file',array('@file' => basename($cssfile))));
@@ -425,6 +430,72 @@ function style_edit_settings_form_submit($form, &$form_state) {
   variable_set('style_edit_editor_type','text');
   drupal_set_message(t('Settings saved'));
   drupal_goto('admin/settings/styleedit/list/');
+}
+
+
+/**
+ * Implementation of hook_form().
+ *
+ * @param &$node The node being added or edited.
+ * @param $form_state The form state array.
+ * @return An array containing the form elements to be displayed in the node edit form.
+ */
+function style_edit_styleset_delete_form($form_state, $theme, $styleid) {
+  $styleset = get_stylesection_db($styleid);
+  
+  $form = array();
+  $form['style'] = array(
+            '#type' => 'fieldset',
+            '#title' => t('Style section'),
+            '#tree' => TRUE,
+            '#collapsible' => FALSE,
+  );
+
+  $form['style']['selector'] = array(
+            '#type' => 'markup',
+            '#title' => t('Selector'),
+            '#value' => $styleset['selector'],
+  );
+  $form['style']['css'] = array(
+            '#type' => 'markup',
+            '#title' => t('CSS'),
+            '#value' => $styleset['style'],
+  );
+  $form['styleid'] = array(
+            '#type' => 'value',
+            '#value' => $styleid,
+  );
+
+  $form['cssid'] = array(
+            '#type' => 'value',
+            '#value' => $styleset['cssid'],
+  );
+
+  $form['edit_type'] = array(
+            '#type' => 'value',
+            '#value' => variable_set('style_edit_editor_type','text'),
+  );
+
+  $form['submit'] = array(
+            '#type' => 'submit',
+            '#value' => t('Delete'),
+  );
+ // TODO: add cancel button
+  
+  return $form;
+}
+
+/**
+ * Implementation of hook_form_submit().
+ *
+ */
+function style_edit_styleset_delete_form_submit($form, &$form_state) {
+  $val = $form_state['values'];
+  $sql = 'DELETE FROM {style_edit_cssstyles} WHERE styleid = %d';
+  db_query($sql,$val['styleid']);
+  set_stylesheet_modified($val['cssid']);
+  drupal_set_message(t('Deleted style @sid',array('@sid' => $val['styleid'])));
+  $form_state['redirect'] = redirect_to_stylescheet($val['cssid']);
 }
 
 ?>
