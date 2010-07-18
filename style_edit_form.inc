@@ -11,13 +11,7 @@ function style_edit_styleset_edit_form($formstate, $theme, $styleid) {
   // Form with values for text editor
   $form = set_text_editor_style_form_values(outline_text_edit_styleset(), $styleid);
 
-  //Todo set bredcrump complete
-  $breadcrumb = array();
-  $breadcrumb[] = l(t('Home'), '<front>');
-  $breadcrumb[] = l(t('Style Editor'), 'admin/settings/styleedit');
-  $breadcrumb[] = l($theme, 'admin/settings/styleedit/list/'.$theme);
-  drupal_set_breadcrumb($breadcrumb);
-
+  set_styleset_edit_breadcrumb($styleid);
   return $form;
 }
 /**
@@ -63,6 +57,23 @@ function redirect_to_stylescheet($cssid) {
 function set_stylesheet_modified($cssid) {
   db_query('UPDATE {style_edit_cssimport} SET udbtimestamp = %d WHERE cssid = %d',
   array(time(),$cssid));
+}
+
+function set_styleset_edit_breadcrumb($styleid) {
+  
+  $cssid = db_result(db_query('SELECT cssid FROM {style_edit_cssstyles} WHERE styleid = %d',$styleid));
+  
+  $sql = 'SELECT * FROM {style_edit_cssimport} WHERE cssid = %d';
+  $result = db_query($sql, $cssid);
+  $cssinfo = db_fetch_array($result);
+  
+  $breadcrumb = array();
+  $breadcrumb[] = l(t('Home'), '<front>');
+  $breadcrumb[] = l(t('Style Editor'), 'admin/settings/styleedit');
+  $breadcrumb[] = l($cssinfo['name'], 'admin/settings/styleedit/list/' . $cssinfo['systemname']);
+  $breadcrumb[] = l($cssinfo['filename'], 'admin/settings/styleedit/list/' .
+    $cssinfo['systemname'] . '/editsheet/' . $cssid);
+  drupal_set_breadcrumb($breadcrumb);
 }
 
 /**
@@ -442,6 +453,8 @@ function style_edit_settings_form_submit($form, &$form_state) {
  */
 function style_edit_styleset_delete_form($form_state, $theme, $styleid) {
   $styleset = get_stylesection_db($styleid);
+  
+  set_styleset_edit_breadcrumb($styleid);
   
   $form = array();
   $form['style'] = array(
