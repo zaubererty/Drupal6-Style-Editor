@@ -231,14 +231,12 @@ function style_edit_stylesheet_edit_form($formstate, $theme, $cssid) {
             '#value' => $css,
     );
 
-
     foreach (styleset_ops() as $op) {
       $form['styleitems'][$key][$op.'_op'] = array(
                 '#value' => l(t($op),'admin/settings/styleedit/styleset/'
-                .$theme.'/'.$op.'/'.$sid),
+                . $theme . '/' . $op . '/' . $sid),
                 );
     }
-
 
     $form['styleitems'][$key]['sort'] = array(
             '#type' => 'weight',
@@ -509,6 +507,55 @@ function style_edit_styleset_delete_form_submit($form, &$form_state) {
   set_stylesheet_modified($val['cssid']);
   drupal_set_message(t('Deleted style @sid',array('@sid' => $val['styleid'])));
   $form_state['redirect'] = redirect_to_stylescheet($val['cssid']);
+}
+
+/**
+ * Implementation of hook_form().
+ *
+ * @param &$node The node being added or edited.
+ * @param $form_state The form state array.
+ * @return An array containing the form elements to be displayed in the node edit form.
+ */
+function style_edit_styleset_add_form($form_state, $theme, $styleid) {
+  
+  set_styleset_edit_breadcrumb($styleid);
+  $form = set_text_editor_style_form_values(outline_text_edit_styleset(), $styleid);
+  $form['sel_cat']['selector']['#default_value'] = '';
+  $form['style']['css']['#default_value'] = '';
+  return $form;
+}
+
+/**
+ * Implementation of hook_form().
+ *
+ * @param &$node The node being added or edited.
+ * @param $form_state The form state array.
+ * @return An array containing the form elements to be displayed in the node edit form.
+ */
+function style_edit_styleset_copy_form($form_state, $theme, $styleid) {
+  
+  $sql = 'SELECT * FROM {style_edit_cssstyles} WHERE styleid = %d';
+  $result = db_query($sql,$styleid);
+  $syleset = db_fetch_array($result);
+  
+  $sql = 'SELECT count(styleid) FROM {style_edit_cssstyles} WHERE cssid = %d';
+  $syleset['weight'] = 1 + db_result(db_query($sql,$syleset['cssid']));
+  
+  $newstyleset = array(
+    'kind' => $syleset['kind'],
+    'selector' => $syleset['selector'],
+    'style' => $syleset['style'],
+    'weight' => $syleset['weight'],
+    'cssid' => $syleset['cssid'],
+  );
+  drupal_write_record('style_edit_cssstyles', $newstyleset);
+  
+  $styleid = db_last_insert_id('style_edit_cssstyles','styleid');
+  
+  set_stylesheet_modified($syleset['cssid']);
+  
+  drupal_set_message(t('Copied style set successful'));
+  drupal_goto('admin/settings/styleedit/styleset/' . $theme . '/edit/' . $styleid);
 }
 
 ?>
