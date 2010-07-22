@@ -526,6 +526,42 @@ function style_edit_styleset_add_form($form_state, $theme, $styleid) {
 }
 
 /**
+ * Implementation of hook_form_submit().
+ *
+ */
+function style_edit_styleset_add_form_submit($form, &$form_state) {
+  $val = $form_state['values'];
+  $sql = 'SELECT count(styleid) FROM {style_edit_cssstyles} WHERE cssid = %d';
+  $result = db_query($sql,$val['cssid']);
+  
+  switch ($val['sel_cat']['kind']) {
+    case 'STYLE':
+      $update_val = array($val['sel_cat']['selector'],'{'.$val['style']['css'].'}' ,$val['styleid']);
+      break;
+    case 'COMMENT':
+      $update_val = array($val['sel_cat']['selector'],$val['style']['css'] ,$val['styleid']);
+      break;
+    default:
+      drupal_set_message(t('Type not known!'), 'error');
+      break;
+  }
+  
+  $newstyleset = array(
+    'kind' => $val['sel_cat']['kind'],
+    'selector' => $update_val[0],
+    'style' => $update_val[1],
+    'weight' => 1 + db_result($result),
+    'cssid' => $val['cssid'],
+  );
+  
+  drupal_write_record('style_edit_cssstyles', $newstyleset);
+  
+  set_stylesheet_modified($val['cssid']);
+  drupal_set_message(t('Added new style set'));
+  $form_state['redirect'] = redirect_to_stylescheet($val['cssid']);
+}
+
+/**
  * Implementation of hook_form().
  *
  * @param &$node The node being added or edited.
